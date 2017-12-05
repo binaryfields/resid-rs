@@ -62,13 +62,23 @@ pub struct Voice {
 
 impl Voice {
     pub fn new(chip_model: ChipModel) -> Voice {
-        Voice {
-            wave_zero: WAVE_ZERO,
-            voice_dc: VOICE_DC,
-            envelope: EnvelopeGenerator::new(),
-            wave: Rc::new(RefCell::new(
-                WaveformGenerator::new(chip_model)
-            )),
+        match chip_model {
+            ChipModel::Mos6581 => Voice {
+                wave_zero: WAVE_ZERO,
+                voice_dc: VOICE_DC,
+                envelope: EnvelopeGenerator::new(),
+                wave: Rc::new(RefCell::new(
+                    WaveformGenerator::new(chip_model)
+                ))
+            },
+            ChipModel::Mos8580 => Voice { // No DC offsets in the MOS8580.
+                wave_zero: 0x800,
+                voice_dc: 0,
+                envelope: EnvelopeGenerator::new(),
+                wave: Rc::new(RefCell::new(
+                    WaveformGenerator::new(chip_model)
+                ))
+            }
         }
     }
 
@@ -94,7 +104,7 @@ impl Voice {
     pub fn output(&self) -> i32 {
         // Multiply oscillator output with envelope output.
         (self.wave.borrow().output() as i32 - self.wave_zero) * self.envelope.output() as i32
-        + self.voice_dc
+            + self.voice_dc
     }
 
     pub fn reset(&mut self) {

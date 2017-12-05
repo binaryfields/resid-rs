@@ -31,7 +31,7 @@ const SHIFT_MASK: u32 = 0x7fffff;
 const OUTPUT_MASK: u16 = 0x0fff;
 
 #[inline(always)]
-pub fn bit_test(value: u8, bit: u8) -> bool {
+fn bit_test(value: u8, bit: u8) -> bool {
     value & (1 << bit) != 0
 }
 
@@ -72,10 +72,10 @@ impl WaveformGenerator {
         let (wave_ps, wave_pst, wave_pt, wave_st) = match chip_model {
             ChipModel::Mos6581 => {
                 (&data::WAVE6581_PS, &data::WAVE6581_PST, &data::WAVE6581_PT, &data::WAVE6581_ST)
-            },
+            }
             ChipModel::Mos8580 => {
                 (&data::WAVE8580_PS, &data::WAVE8580_PST, &data::WAVE8580_PT, &data::WAVE8580_ST)
-            },
+            }
         };
         let mut waveform = WaveformGenerator {
             sync_source: None,
@@ -189,27 +189,27 @@ impl WaveformGenerator {
     pub fn clock(&mut self) {
         // No operation if test bit is set.
         if !self.test {
-            let last_acc = self.acc;
+            let acc_prev = self.acc;
             // Calculate new accumulator value;
             self.acc = (self.acc + self.frequency as u32) & ACC_MASK;
             // Check whether the MSB is set high. This is used for synchronization.
-            self.msb_rising = (last_acc & ACC_MSB_MASK) == 0 && (self.acc & ACC_MSB_MASK) != 0;
-            if (last_acc & ACC_BIT19_MASK) == 0 && (self.acc & ACC_BIT19_MASK) != 0 {
+            self.msb_rising = (acc_prev & ACC_MSB_MASK) == 0 && (self.acc & ACC_MSB_MASK) != 0;
+            if (acc_prev & ACC_BIT19_MASK) == 0 && (self.acc & ACC_BIT19_MASK) != 0 {
                 // Shift noise register once for each time accumulator bit 19 is set high.
                 let bit0 = ((self.shift >> 22) ^ (self.shift >> 17)) & 0x01;
-                self.shift = (self.shift << 1) & SHIFT_MASK | bit0;
+                self.shift = ((self.shift << 1) & SHIFT_MASK) | bit0;
             }
         }
     }
 
     pub fn clock_delta(&mut self, delta: u32) {
         if !self.test {
-            let last_acc = self.acc;
+            let acc_prev = self.acc;
             // Calculate new accumulator value;
             let mut delta_acc = delta * self.frequency as u32;
             self.acc = (self.acc + delta_acc) & ACC_MASK;
             // Check whether the MSB is set high. This is used for synchronization.
-            self.msb_rising = (last_acc & ACC_MSB_MASK) == 0 && (self.acc & ACC_MSB_MASK) != 0;
+            self.msb_rising = (acc_prev & ACC_MSB_MASK) == 0 && (self.acc & ACC_MSB_MASK) != 0;
             // Shift noise register once for each time accumulator bit 19 is set high.
             // Bit 19 is set high each time 2^20 (0x100000) is added to the accumulator.
             let mut shift_period = 0x100000;
@@ -372,7 +372,7 @@ impl WaveformGenerator {
     fn output_t(&self) -> u16 {
         let acc = if self.ring { self.acc ^ self.get_sync_source_acc() } else { self.acc };
         let msb = acc & ACC_MSB_MASK;
-        let output = if msb != 0 { !self.acc } else { self.acc };
+        let output = if msb != 0 { !self.acc } else { self.acc }; // TODO check w/ ref impl
         (output >> 11) as u16 & OUTPUT_MASK
     }
 

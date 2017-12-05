@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-pub use super::ChipModel;
+use super::ChipModel;
 
 // Maximum mixer DC output level; to be removed if the external
 // filter is turned off: ((wave DC + voice DC)*voices + mixer DC)*volume

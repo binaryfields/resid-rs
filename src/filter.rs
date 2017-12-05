@@ -235,11 +235,7 @@ impl Filter {
         voice2 >>= 7;
         // NB! Voice 3 is not silenced by voice3off if it is routed through
         // the filter.
-        if self.voice3_off && self.filt & 0x04 == 0 {
-            voice3 = 0;
-        } else {
-            voice3 >>= 7;
-        }
+        voice3 = if self.voice3_off && self.filt & 0x04 == 0 { 0 } else { voice3 >> 7 };
         ext_in >>= 7;
 
         // This is handy for testing.
@@ -514,8 +510,6 @@ impl Filter {
         self.set_w0();
         self.set_q();
     }
-
-    // -- Internal Ops
 
     fn set_f0(&mut self) {
         let points = self.f0_points.into_iter()

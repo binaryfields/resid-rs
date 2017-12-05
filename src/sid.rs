@@ -113,7 +113,7 @@ pub struct Sid {
     bus_value: u8,
     bus_value_ttl: u32,
     ext_in: i32,
-    // Sampling
+    // Sampling State
     cycles_per_sample: u32,
     sample_offset: i32,
     sample_prev: i16,
@@ -261,19 +261,17 @@ impl Sid {
     }
 
     pub fn reset(&mut self) {
+        self.ext_filter.reset();
+        self.filter.reset();
         for i in 0..3 {
             self.voices[i].reset();
         }
-        self.filter.reset();
-        self.ext_filter.reset();
         self.bus_value = 0;
         self.bus_value_ttl = 0;
         self.ext_in = 0;
         self.sample_offset = 0;
         self.sample_prev = 0;
     }
-
-    // -- Sampling
 
     // ----------------------------------------------------------------------------
     // SID clocking with audio sampling.
@@ -319,14 +317,15 @@ impl Sid {
             delta -= delta_sample;
             self.sample_offset = (next_sample_offset & FIXP_MASK) - (1 << (FIXP_SHIFT - 1));
             buffer[(s * interleave) as usize] = self.output();
-            s += 1;
+            s += 1; // TODO check w/ ref impl
         }
         self.clock_delta(delta);
         self.sample_offset -= (delta as i32) << FIXP_SHIFT;
-        (s, 0)
+        delta = 0;
+        (s, delta)
     }
 
-    fn clock_interpolate(&mut self,
+    fn sample_interpolate(&mut self,
                          mut delta_t: u32,
                          buffer: &mut [i16],
                          n: usize,
@@ -342,24 +341,22 @@ impl Sid {
                 return (s, delta_t);
             }
             for i in 0..(delta_t_sample - 1) {
+                self.sample_prev = self.output();
                 self.clock();
             }
-            self.sample_prev = self.output();
-            self.clock();
             delta_t -= delta_t_sample;
             self.sample_offset = next_sample_offset & FIXP_MASK;
             let sample_now = self.output();
             buffer[s * interleave] = self.sample_prev + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT) as i16;
-            s += 1;
+            s += 1; // TODO check w/ ref impl
             self.sample_prev = sample_now;
         }
         for i in 0..(delta_t - 1) {
             self.clock();
         }
-        self.sample_prev = self.output();
-        self.clock();
         self.sample_offset -= (delta_t as i32) << FIXP_SHIFT;
-        (s, 0)
+        delta_t = 0;
+        (s, delta_t)
     }
 
     // ----------------------------------------------------------------------------
@@ -387,6 +384,7 @@ impl Sid {
     pub fn set_sampling_parameters(&mut self, clock_freq: u32, sample_freq: u32) {
         self.cycles_per_sample = (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
         self.sample_offset = 0;
+        self.sample_prev = 0;
     }
 
     // -- Device I/O

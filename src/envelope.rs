@@ -108,12 +108,12 @@ static SUSTAIN_LEVEL: [u8; 16] = [
 ];
 
 #[inline(always)]
-pub fn bit_test(value: u8, bit: u8) -> bool {
+fn bit_test(value: u8, bit: u8) -> bool {
     value & (1 << bit) != 0
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum State {
+enum State {
     Attack,
     DecaySustain,
     Release,
@@ -218,7 +218,7 @@ impl EnvelopeGenerator {
             self.rate_counter = 0;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
-            self.exponential_counter += 1;
+            self.exponential_counter += 1; // TODO check w/ ref impl
             if self.state == State::Attack ||
                 self.exponential_counter == self.exponential_counter_period {
                 self.exponential_counter = 0;
@@ -290,7 +290,7 @@ impl EnvelopeGenerator {
             delta -= rate_step as u32;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
-            self.exponential_counter += 1;
+            self.exponential_counter += 1; // TODO check w/ ref impl
             if self.state == State::Attack ||
                 self.exponential_counter == self.exponential_counter_period {
                 self.exponential_counter = 0;
