@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2017 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
- * Portions (c) 2004 Dag Lem <resid@nimrod.no>
  *
  * This file is part of resid-rs.
  *

@@ -325,6 +325,7 @@ impl Sid {
         (s, delta)
     }
 
+    #[allow(dead_code)]
     fn sample_interpolate(&mut self,
                          mut delta_t: u32,
                          buffer: &mut [i16],
@@ -340,7 +341,7 @@ impl Sid {
             if s >= n {
                 return (s, delta_t);
             }
-            for i in 0..(delta_t_sample - 1) {
+            for _i in 0..(delta_t_sample - 1) {
                 self.sample_prev = self.output();
                 self.clock();
             }
@@ -351,7 +352,7 @@ impl Sid {
             s += 1; // TODO check w/ ref impl
             self.sample_prev = sample_now;
         }
-        for i in 0..(delta_t - 1) {
+        for _i in 0..(delta_t - 1) {
             self.clock();
         }
         self.sample_offset -= (delta_t as i32) << FIXP_SHIFT;

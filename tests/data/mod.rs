@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2017 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
- * Portions (c) 2004 Dag Lem <resid@nimrod.no>
  *
  * This file is part of resid-rs.
  *
@@ -18,19 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-mod data;
-pub mod envelope;
-pub mod external_filter;
-mod filter;
-mod sid;
-pub mod spline;
-mod voice;
-pub mod wave;
-
-#[derive(Clone, Copy)]
-pub enum ChipModel {
-    Mos6581,
-    Mos8580,
-}
-
-pub use self::sid::Sid;
+pub mod sid_output;
+pub mod spline_output;
+pub mod wave_output;
+pub mod wave_delta_output;

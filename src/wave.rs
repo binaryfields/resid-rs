@@ -25,9 +25,9 @@ use super::ChipModel;
 use super::data;
 
 const ACC_MASK: u32 = 0x00ffffff;
-const ACC_BIT19_MASK: u32 = 0x080000;
-const ACC_MSB_MASK: u32 = 0x800000;
-const SHIFT_MASK: u32 = 0x7fffff;
+const ACC_BIT19_MASK: u32 = 0x00080000;
+const ACC_MSB_MASK: u32 = 0x00800000;
+const SHIFT_MASK: u32 = 0x007fffff;
 const OUTPUT_MASK: u16 = 0x0fff;
 
 #[inline(always)]
@@ -372,7 +372,7 @@ impl WaveformGenerator {
     fn output_t(&self) -> u16 {
         let acc = if self.ring { self.acc ^ self.get_sync_source_acc() } else { self.acc };
         let msb = acc & ACC_MSB_MASK;
-        let output = if msb != 0 { !self.acc } else { self.acc }; // TODO check w/ ref impl
+        let output = if msb != 0 { !self.acc } else { self.acc };
         (output >> 11) as u16 & OUTPUT_MASK
     }
 
