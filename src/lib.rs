@@ -18,13 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern crate bit_field;
+
 mod data;
 pub mod envelope;
 pub mod external_filter;
-mod filter;
+pub mod filter;
 mod sid;
 pub mod spline;
-mod voice;
+pub mod voice;
 pub mod wave;
 
 #[derive(Clone, Copy)]

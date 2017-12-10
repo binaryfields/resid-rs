@@ -19,6 +19,7 @@
  */
 
 use super::ChipModel;
+use super::envelope::{State as EnvState};
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
 use super::voice::Voice;
@@ -107,20 +108,21 @@ impl Reg {
 #[derive(Debug)]
 pub struct State {
     // Sid
-    sid_register: [u8; 32],
-    bus_value: u8,
-    bus_value_ttl: u32,
-    ext_in: i32,
+    pub sid_register: [u8; 32],
+    pub bus_value: u8,
+    pub bus_value_ttl: u32,
+    pub ext_in: i32,
     // Wave
-    accumulator: [u32; 3],
-    shift_register: [u32; 3],
+    pub accumulator: [u32; 3],
+    pub shift_register: [u32; 3],
     // Envelope
-    envelope_counter: [u8; 3],
-    exponential_counter: [u8; 3],
-    exponential_counter_period: [u8; 3],
-    hold_zero: [u8; 3],
-    rate_counter: [u16; 3],
-    rate_counter_period: [u16; 3],
+    pub envelope_state: [u8; 3],
+    pub envelope_counter: [u8; 3],
+    pub exponential_counter: [u8; 3],
+    pub exponential_counter_period: [u8; 3],
+    pub hold_zero: [u8; 3],
+    pub rate_counter: [u16; 3],
+    pub rate_counter_period: [u16; 3],
 }
 
 pub struct Sid {
@@ -277,40 +279,6 @@ impl Sid {
         } else {
             sample as i16
         }
-    }
-
-    pub fn read_state(&self) -> State {
-        let mut state = State {
-            sid_register: [0; 32],
-            bus_value: 0,
-            bus_value_ttl: 0,
-            ext_in: 0,
-            accumulator: [0; 3],
-            shift_register: [0; 3],
-            envelope_counter: [0; 3],
-            exponential_counter: [0; 3],
-            exponential_counter_period: [0; 3],
-            hold_zero: [0; 3],
-            rate_counter: [0; 3],
-            rate_counter_period: [0; 3],
-        };
-        for i in 0..32 {
-            state.sid_register[i] = 0; // self.read(i as u8);
-        }
-        state.bus_value = self.bus_value;
-        state.bus_value_ttl = self.bus_value_ttl;
-        state.ext_in = self.ext_in;
-        for i in 0..3 {
-            state.accumulator[i] = self.voices[i].wave.borrow().get_acc();
-            state.shift_register[i] = self.voices[i].wave.borrow().get_shift();
-            state.envelope_counter[i] = self.voices[i].envelope.envelope_counter;
-            state.exponential_counter[i] = self.voices[i].envelope.exponential_counter;
-            state.exponential_counter_period[i] = self.voices[i].envelope.exponential_counter_period;
-            state.hold_zero[i] = if self.voices[i].envelope.hold_zero { 1 } else { 0 };
-            state.rate_counter[i] = self.voices[i].envelope.rate_counter;
-            state.rate_counter_period[i] = self.voices[i].envelope.rate_period;
-        }
-        state
     }
 
     pub fn reset(&mut self) {
@@ -533,6 +501,91 @@ impl Sid {
                 self.filter.set_mode_vol(value);
             }
             _ => {}
+        }
+    }
+
+    // -- State
+
+    pub fn read_state(&self) -> State {
+        let mut state = State {
+            sid_register: [0; 32],
+            bus_value: 0,
+            bus_value_ttl: 0,
+            ext_in: 0,
+            accumulator: [0; 3],
+            shift_register: [0; 3],
+            envelope_state: [0; 3],
+            envelope_counter: [0; 3],
+            exponential_counter: [0; 3],
+            exponential_counter_period: [0; 3],
+            hold_zero: [0; 3],
+            rate_counter: [0; 3],
+            rate_counter_period: [0; 3],
+        };
+        for i in 0..3 {
+            let j = i * 7;
+            let wave = self.voices[i].wave.borrow();
+            let envelope = &self.voices[i].envelope;
+            state.sid_register[j + 0] = wave.get_frequency_lo();
+            state.sid_register[j + 1] = wave.get_frequency_hi();
+            state.sid_register[j + 2] = wave.get_pulse_width_lo();
+            state.sid_register[j + 3] = wave.get_pulse_width_hi();
+            state.sid_register[j + 4] = wave.get_control() | envelope.get_control();
+            state.sid_register[j + 5] = envelope.get_attack_decay();
+            state.sid_register[j + 6] = envelope.get_sustain_release();
+        }
+        state.sid_register[0x15] = self.filter.get_fc_lo();
+        state.sid_register[0x16] = self.filter.get_fc_hi();
+        state.sid_register[0x17] = self.filter.get_res_filt();
+        state.sid_register[0x18] = self.filter.get_mode_vol();
+        for i in 0x19..0x1d {
+            state.sid_register[i] = self.read(i as u8);
+        }
+        for i in 0x1d..0x20 {
+            state.sid_register[i] = 0;
+        }
+        state.bus_value = self.bus_value;
+        state.bus_value_ttl = self.bus_value_ttl;
+        state.ext_in = self.ext_in;
+        for i in 0..3 {
+            let wave = self.voices[i].wave.borrow();
+            let envelope = &self.voices[i].envelope;
+            state.accumulator[i] = wave.get_acc();
+            state.shift_register[i] = wave.get_shift();
+            state.envelope_state[i] = envelope.state as u8;
+            state.envelope_counter[i] = envelope.envelope_counter;
+            state.exponential_counter[i] = envelope.exponential_counter;
+            state.exponential_counter_period[i] = envelope.exponential_counter_period;
+            state.hold_zero[i] = if envelope.hold_zero { 1 } else { 0 };
+            state.rate_counter[i] = envelope.rate_counter;
+            state.rate_counter_period[i] = envelope.rate_counter_period;
+        }
+        state
+    }
+
+    pub fn write_state(&mut self, state: State) {
+        for i in 0..0x19 {
+            self.write(i, state.sid_register[i as usize]);
+        }
+        self.bus_value = state.bus_value;
+        self.bus_value_ttl = state.bus_value_ttl;
+        self.ext_in = state.ext_in;
+        for i in 0..3 {
+            let envelope = &mut self.voices[i].envelope;
+            self.voices[i].wave.borrow_mut().acc = state.accumulator[i];
+            self.voices[i].wave.borrow_mut().shift = state.shift_register[i];
+            envelope.state = match state.envelope_state[i] {
+                0 => EnvState::Attack,
+                1 => EnvState::DecaySustain,
+                2 => EnvState::Release,
+                _ => panic!("invalid envelope state"),
+            };
+            envelope.envelope_counter = state.envelope_counter[i];
+            envelope.exponential_counter = state.exponential_counter[i];
+            envelope.exponential_counter_period = state.exponential_counter_period[i];
+            envelope.hold_zero = if state.hold_zero[i] != 0 { true } else { false };
+            envelope.rate_counter = state.rate_counter[i] ;
+            envelope.rate_counter_period = state.rate_counter_period[i];
         }
     }
 }

@@ -21,6 +21,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use bit_field::BitField;
+
 use super::ChipModel;
 use super::data;
 
@@ -29,11 +31,6 @@ const ACC_BIT19_MASK: u32 = 0x00080000;
 const ACC_MSB_MASK: u32 = 0x00800000;
 const SHIFT_MASK: u32 = 0x007fffff;
 const OUTPUT_MASK: u16 = 0x0fff;
-
-#[inline(always)]
-fn bit_test(value: u8, bit: u8) -> bool {
-    value & (1 << bit) != 0
-}
 
 // ----------------------------------------------------------------------------
 // A 24 bit accumulator is the basis for waveform generation. FREQ is added to
@@ -57,8 +54,8 @@ pub struct WaveformGenerator {
     sync: bool,
     test: bool,
     // Runtime State
-    acc: u32,
-    shift: u32,
+    pub acc: u32,
+    pub shift: u32,
     msb_rising: bool,
     // Static Data
     wave_ps: &'static [u8; 4096],
@@ -102,8 +99,32 @@ impl WaveformGenerator {
         self.acc
     }
 
+    pub fn get_control(&self) -> u8 {
+        let mut value = 0u8;
+        value.set_bit(1, self.sync);
+        value.set_bit(2, self.ring);
+        value.set_bit(3, self.test);
+        value | (self.waveform << 4)
+    }
+
     pub fn get_frequency(&self) -> u16 {
         self.frequency
+    }
+
+    pub fn get_frequency_hi(&self) -> u8 {
+        (self.frequency >> 8) as u8
+    }
+
+    pub fn get_frequency_lo(&self) -> u8 {
+        (self.frequency & 0x00ff) as u8
+    }
+
+    pub fn get_pulse_width_hi(&self) -> u8 {
+        (self.pulse_width >> 8) as u8
+    }
+
+    pub fn get_pulse_width_lo(&self) -> u8 {
+        (self.pulse_width & 0x00ff) as u8
     }
 
     pub fn get_shift(&self) -> u32 {
@@ -136,9 +157,9 @@ impl WaveformGenerator {
 
     pub fn set_control(&mut self, value: u8) {
         self.waveform = (value >> 4) & 0x0f;
-        self.sync = bit_test(value, 1);
-        self.ring = bit_test(value, 2);
-        let test = bit_test(value, 3);
+        self.sync = value.get_bit(1);
+        self.ring = value.get_bit(2);
+        let test = value.get_bit(3);
         if test {
             // Test bit set.
             // The accumulator and the shift register are both cleared.

@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use bit_field::BitField;
+
 const RATE_COUNTER_MASK: u16 = 0x7fff;
 const RATE_COUNTER_MSB_MASK: u16 = 0x8000;
 
@@ -107,13 +109,8 @@ static SUSTAIN_LEVEL: [u8; 16] = [
     0xff,
 ];
 
-#[inline(always)]
-fn bit_test(value: u8, bit: u8) -> bool {
-    value & (1 << bit) != 0
-}
-
 #[derive(Clone, Copy, PartialEq)]
-enum State {
+pub enum State {
     Attack,
     DecaySustain,
     Release,
@@ -144,7 +141,7 @@ pub struct EnvelopeGenerator {
     pub exponential_counter_period: u8,
     pub hold_zero: bool,
     pub rate_counter: u16,
-    pub rate_period: u16,
+    pub rate_counter_period: u16,
 }
 
 impl EnvelopeGenerator {
@@ -161,34 +158,48 @@ impl EnvelopeGenerator {
             exponential_counter_period: 0,
             hold_zero: false,
             rate_counter: 0,
-            rate_period: 0,
+            rate_counter_period: 0,
         };
         envelope.reset();
         envelope
+    }
+
+    pub fn get_attack_decay(&self) -> u8 {
+        self.attack << 4 | self.decay
+    }
+
+    pub fn get_control(&self) -> u8 {
+        let mut value = 0u8;
+        value.set_bit(0, self.gate);
+        value
+    }
+
+    pub fn get_sustain_release(&self) -> u8 {
+        self.sustain << 4 | self.release
     }
 
     pub fn set_attack_decay(&mut self, value: u8) {
         self.attack = (value >> 4) & 0x0f;
         self.decay = value & 0x0f;
         match self.state {
-            State::Attack => self.rate_period = RATE_COUNTER_PERIOD[self.attack as usize],
-            State::DecaySustain => self.rate_period = RATE_COUNTER_PERIOD[self.decay as usize],
+            State::Attack => self.rate_counter_period = RATE_COUNTER_PERIOD[self.attack as usize],
+            State::DecaySustain => self.rate_counter_period = RATE_COUNTER_PERIOD[self.decay as usize],
             _ => {},
         }
     }
 
     pub fn set_control(&mut self, value: u8) {
-        let gate = bit_test(value, 0);
+        let gate = value.get_bit(0);
         if !self.gate && gate {
             // Gate bit on: Start attack, decay, sustain.
             self.state = State::Attack;
-            self.rate_period = RATE_COUNTER_PERIOD[self.attack as usize];
+            self.rate_counter_period = RATE_COUNTER_PERIOD[self.attack as usize];
             // Switching to attack state unlocks the zero freeze.
             self.hold_zero = false;
         } else if self.gate && !gate {
             // Gate bit off: Start release.
             self.state = State::Release;
-            self.rate_period = RATE_COUNTER_PERIOD[self.release as usize];
+            self.rate_counter_period = RATE_COUNTER_PERIOD[self.release as usize];
         }
         self.gate = gate;
     }
@@ -197,7 +208,7 @@ impl EnvelopeGenerator {
         self.sustain = (value >> 4) & 0x0f;
         self.release = value & 0x0f;
         match self.state {
-            State::Release => self.rate_period = RATE_COUNTER_PERIOD[self.release as usize],
+            State::Release => self.rate_counter_period = RATE_COUNTER_PERIOD[self.release as usize],
             _ => {},
         }
     }
@@ -214,7 +225,7 @@ impl EnvelopeGenerator {
             self.rate_counter += 1;
             self.rate_counter &= RATE_COUNTER_MASK;
         }
-        if self.rate_counter == self.rate_period {
+        if self.rate_counter == self.rate_counter_period {
             self.rate_counter = 0;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
@@ -235,7 +246,7 @@ impl EnvelopeGenerator {
                         self.envelope_counter += 1;
                         if self.envelope_counter == 0xff {
                             self.state = State::DecaySustain;
-                            self.rate_period = RATE_COUNTER_PERIOD[self.decay as usize];
+                            self.rate_counter_period = RATE_COUNTER_PERIOD[self.decay as usize];
                         }
                     },
                     State::DecaySustain => {
@@ -273,7 +284,7 @@ impl EnvelopeGenerator {
     }
 
     pub fn clock_delta(&mut self, mut delta: u32) {
-        let mut rate_step = self.rate_period - self.rate_counter;
+        let mut rate_step = self.rate_counter_period - self.rate_counter;
         if rate_step <= 0 {
             rate_step += 0x7fff;
         }
@@ -296,7 +307,7 @@ impl EnvelopeGenerator {
                 self.exponential_counter = 0;
                 // Check whether the envelope counter is frozen at zero.
                 if self.hold_zero {
-                    rate_step = self.rate_period;
+                    rate_step = self.rate_counter_period;
                     continue;
                 }
                 match self.state {
@@ -308,7 +319,7 @@ impl EnvelopeGenerator {
                         self.envelope_counter += 1;
                         if self.envelope_counter == 0xff {
                             self.state = State::DecaySustain;
-                            self.rate_period = RATE_COUNTER_PERIOD[self.decay as usize];
+                            self.rate_counter_period = RATE_COUNTER_PERIOD[self.decay as usize];
                         }
                     },
                     State::DecaySustain => {
@@ -342,7 +353,7 @@ impl EnvelopeGenerator {
                     _ => {},
                 }
             }
-            rate_step = self.rate_period;
+            rate_step = self.rate_counter_period;
         }
     }
 
@@ -366,7 +377,6 @@ impl EnvelopeGenerator {
         self.exponential_counter_period = 1;
         self.hold_zero = true;
         self.rate_counter = 0;
-        self.rate_period = RATE_COUNTER_PERIOD[self.release as usize];
+        self.rate_counter_period = RATE_COUNTER_PERIOD[self.release as usize];
     }
 }
-

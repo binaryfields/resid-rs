@@ -150,10 +150,10 @@ pub struct Filter {
     hp_bp_lp: u8,
     vol: u8,
     // Runtime State
-    vhp: i32,
-    vbp: i32,
-    vlp: i32,
-    vnf: i32,
+    pub vhp: i32,
+    pub vbp: i32,
+    pub vlp: i32,
+    pub vnf: i32,
     // Cutoff Freq/Res
     mixer_dc: i32,
     q_1024_div: i32,
@@ -195,6 +195,23 @@ impl Filter {
         filter.set_q();
         filter.set_w0();
         filter
+    }
+
+    pub fn get_fc_hi(&self) -> u8 {
+        (self.fc >> 3) as u8
+    }
+
+    pub fn get_fc_lo(&self) -> u8 {
+        (self.fc & 0x007) as u8
+    }
+
+    pub fn get_mode_vol(&self) -> u8 {
+        let value = if self.voice3_off { 0x80 } else { 0 };
+        value | (self.hp_bp_lp << 4) | (self.vol & 0x0f)
+    }
+
+    pub fn get_res_filt(&self) -> u8 {
+        (self.res << 4) | (self.filt & 0x0f)
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
@@ -330,11 +347,11 @@ impl Filter {
         // Vhp = Vbp/Q - Vlp - Vi;
         // dVbp = -w0*Vhp*dt;
         // dVlp = -w0*Vbp*dt;
-        let dvbp = (self.w0_ceil_1 * self.vhp) >> 20;
-        let dvlp = (self.w0_ceil_1 * self.vbp) >> 20;
+        let dvbp = self.w0_ceil_1 * self.vhp >> 20;
+        let dvlp = self.w0_ceil_1 * self.vbp >> 20;
         self.vbp -= dvbp;
         self.vlp -= dvlp;
-        self.vhp = ((self.vbp * self.q_1024_div) >> 10) - self.vlp - vi;
+        self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
     }
 
     pub fn clock_delta(&mut self,
@@ -457,11 +474,11 @@ impl Filter {
             // dVbp = -w0*Vhp*dt;
             // dVlp = -w0*Vbp*dt;
             let w0_delta_t = (self.w0_ceil_dt * delta_flt as i32) >> 6;
-            let dvbp = (w0_delta_t * self.vhp) >> 14;
-            let dvlp = (w0_delta_t * self.vbp) >> 14;
+            let dvbp = w0_delta_t * self.vhp >> 14;
+            let dvlp = w0_delta_t * self.vbp >> 14;
             self.vbp -= dvbp;
             self.vlp -= dvlp;
-            self.vhp = ((self.vbp * self.q_1024_div) >> 10) - self.vlp - vi;
+            self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
 
             delta -= delta_flt;
         }
