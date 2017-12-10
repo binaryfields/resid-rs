@@ -138,13 +138,13 @@ pub struct EnvelopeGenerator {
     // Control
     gate: bool,
     // Runtime State
-    state: State,
-    envelope_counter: u8,
-    exponential_counter: u8,
-    exponential_counter_period: u8,
-    hold_zero: bool,
-    rate_counter: u16,
-    rate_period: u16,
+    pub state: State,
+    pub envelope_counter: u8,
+    pub exponential_counter: u8,
+    pub exponential_counter_period: u8,
+    pub hold_zero: bool,
+    pub rate_counter: u16,
+    pub rate_period: u16,
 }
 
 impl EnvelopeGenerator {

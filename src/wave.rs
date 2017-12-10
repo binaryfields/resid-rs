@@ -106,6 +106,10 @@ impl WaveformGenerator {
         self.frequency
     }
 
+    pub fn get_shift(&self) -> u32 {
+        self.shift
+    }
+
     pub fn get_sync_dest_sync(&self) -> bool {
         if let Some(ref sync_dest) = self.sync_dest {
             sync_dest.borrow().sync

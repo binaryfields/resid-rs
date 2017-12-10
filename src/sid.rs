@@ -104,6 +104,25 @@ impl Reg {
     }
 }
 
+#[derive(Debug)]
+pub struct State {
+    // Sid
+    sid_register: [u8; 32],
+    bus_value: u8,
+    bus_value_ttl: u32,
+    ext_in: i32,
+    // Wave
+    accumulator: [u32; 3],
+    shift_register: [u32; 3],
+    // Envelope
+    envelope_counter: [u8; 3],
+    exponential_counter: [u8; 3],
+    exponential_counter_period: [u8; 3],
+    hold_zero: [u8; 3],
+    rate_counter: [u16; 3],
+    rate_counter_period: [u16; 3],
+}
+
 pub struct Sid {
     // Functional Units
     ext_filter: ExternalFilter,
@@ -260,6 +279,40 @@ impl Sid {
         }
     }
 
+    pub fn read_state(&self) -> State {
+        let mut state = State {
+            sid_register: [0; 32],
+            bus_value: 0,
+            bus_value_ttl: 0,
+            ext_in: 0,
+            accumulator: [0; 3],
+            shift_register: [0; 3],
+            envelope_counter: [0; 3],
+            exponential_counter: [0; 3],
+            exponential_counter_period: [0; 3],
+            hold_zero: [0; 3],
+            rate_counter: [0; 3],
+            rate_counter_period: [0; 3],
+        };
+        for i in 0..32 {
+            state.sid_register[i] = 0; // self.read(i as u8);
+        }
+        state.bus_value = self.bus_value;
+        state.bus_value_ttl = self.bus_value_ttl;
+        state.ext_in = self.ext_in;
+        for i in 0..3 {
+            state.accumulator[i] = self.voices[i].wave.borrow().get_acc();
+            state.shift_register[i] = self.voices[i].wave.borrow().get_shift();
+            state.envelope_counter[i] = self.voices[i].envelope.envelope_counter;
+            state.exponential_counter[i] = self.voices[i].envelope.exponential_counter;
+            state.exponential_counter_period[i] = self.voices[i].envelope.exponential_counter_period;
+            state.hold_zero[i] = if self.voices[i].envelope.hold_zero { 1 } else { 0 };
+            state.rate_counter[i] = self.voices[i].envelope.rate_counter;
+            state.rate_counter_period[i] = self.voices[i].envelope.rate_period;
+        }
+        state
+    }
+
     pub fn reset(&mut self) {
         self.ext_filter.reset();
         self.filter.reset();
@@ -327,10 +380,10 @@ impl Sid {
 
     #[allow(dead_code)]
     fn sample_interpolate(&mut self,
-                         mut delta_t: u32,
-                         buffer: &mut [i16],
-                         n: usize,
-                         interleave: usize) -> (usize, u32) {
+                          mut delta_t: u32,
+                          buffer: &mut [i16],
+                          n: usize,
+                          interleave: usize) -> (usize, u32) {
         let mut s = 0;
         loop {
             let next_sample_offset = self.sample_offset + self.cycles_per_sample as i32;
@@ -406,80 +459,80 @@ impl Sid {
         match Reg::from(reg) {
             Reg::FREQLO1 => {
                 self.voices[0].wave.borrow_mut().set_frequency_lo(value);
-            },
+            }
             Reg::FREQHI1 => {
                 self.voices[0].wave.borrow_mut().set_frequency_hi(value);
-            },
+            }
             Reg::PWLO1 => {
                 self.voices[0].wave.borrow_mut().set_pulse_width_lo(value);
-            },
+            }
             Reg::PWHI1 => {
                 self.voices[0].wave.borrow_mut().set_pulse_width_hi(value);
-            },
+            }
             Reg::CR1 => {
                 self.voices[0].set_control(value);
-            },
+            }
             Reg::AD1 => {
                 self.voices[0].envelope.set_attack_decay(value);
-            },
+            }
             Reg::SR1 => {
                 self.voices[0].envelope.set_sustain_release(value);
-            },
+            }
             Reg::FREQLO2 => {
                 self.voices[1].wave.borrow_mut().set_frequency_lo(value);
-            },
+            }
             Reg::FREQHI2 => {
                 self.voices[1].wave.borrow_mut().set_frequency_hi(value);
-            },
+            }
             Reg::PWLO2 => {
                 self.voices[1].wave.borrow_mut().set_pulse_width_lo(value);
-            },
+            }
             Reg::PWHI2 => {
                 self.voices[1].wave.borrow_mut().set_pulse_width_hi(value);
-            },
+            }
             Reg::CR2 => {
                 self.voices[1].set_control(value);
-            },
+            }
             Reg::AD2 => {
                 self.voices[1].envelope.set_attack_decay(value);
-            },
+            }
             Reg::SR2 => {
                 self.voices[1].envelope.set_sustain_release(value);
-            },
+            }
             Reg::FREQLO3 => {
                 self.voices[2].wave.borrow_mut().set_frequency_lo(value);
-            },
+            }
             Reg::FREQHI3 => {
                 self.voices[2].wave.borrow_mut().set_frequency_hi(value);
-            },
+            }
             Reg::PWLO3 => {
                 self.voices[2].wave.borrow_mut().set_pulse_width_lo(value);
-            },
+            }
             Reg::PWHI3 => {
                 self.voices[2].wave.borrow_mut().set_pulse_width_hi(value);
-            },
+            }
             Reg::CR3 => {
                 self.voices[2].set_control(value);
-            },
+            }
             Reg::AD3 => {
                 self.voices[2].envelope.set_attack_decay(value);
-            },
+            }
             Reg::SR3 => {
                 self.voices[2].envelope.set_sustain_release(value);
-            },
+            }
             Reg::FCLO => {
                 self.filter.set_fc_lo(value);
-            },
+            }
             Reg::FCHI => {
                 self.filter.set_fc_hi(value);
-            },
+            }
             Reg::RESFILT => {
                 self.filter.set_res_filt(value);
-            },
+            }
             Reg::MODVOL => {
                 self.filter.set_mode_vol(value);
             }
-            _ => {},
+            _ => {}
         }
     }
 }
