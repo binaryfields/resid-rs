@@ -284,7 +284,8 @@ impl EnvelopeGenerator {
     }
 
     pub fn clock_delta(&mut self, mut delta: u32) {
-        let mut rate_step = self.rate_counter_period - self.rate_counter;
+        // NB! This requires two's complement integer.
+        let mut rate_step = self.rate_counter_period as i32 - self.rate_counter as i32;
         if rate_step <= 0 {
             rate_step += 0x7fff;
         }
@@ -307,7 +308,7 @@ impl EnvelopeGenerator {
                 self.exponential_counter = 0;
                 // Check whether the envelope counter is frozen at zero.
                 if self.hold_zero {
-                    rate_step = self.rate_counter_period;
+                    rate_step = self.rate_counter_period as i32;
                     continue;
                 }
                 match self.state {
@@ -353,7 +354,7 @@ impl EnvelopeGenerator {
                     _ => {},
                 }
             }
-            rate_step = self.rate_counter_period;
+            rate_step = self.rate_counter_period as i32;
         }
     }
 

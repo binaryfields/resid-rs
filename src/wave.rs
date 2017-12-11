@@ -184,23 +184,23 @@ impl WaveformGenerator {
     }
 
     pub fn set_frequency_hi(&mut self, value: u8) {
-        let value = (self.frequency & 0x00ff) | ((value as u16) << 8);
-        self.frequency = value;
+        let result = (((value as u16) << 8) & 0xff00) | (self.frequency & 0x00ff);
+        self.frequency = result;
     }
 
     pub fn set_frequency_lo(&mut self, value: u8) {
-        let value = (self.frequency & 0xff00) | (value as u16);
-        self.frequency = value;
+        let result = (self.frequency & 0xff00) | ((value as u16) & 0x00ff);
+        self.frequency = result;
     }
 
     pub fn set_pulse_width_hi(&mut self, value: u8) {
-        let value = (self.pulse_width & 0x00ff) | ((value as u16) << 8);
-        self.pulse_width = value;
+        let result = (((value as u16) << 8) & 0x0f00) | (self.pulse_width & 0x00ff);
+        self.pulse_width = result;
     }
 
     pub fn set_pulse_width_lo(&mut self, value: u8) {
-        let value = (self.pulse_width & 0xff00) | (value as u16);
-        self.pulse_width = value;
+        let result = (self.pulse_width & 0x0f00) | ((value as u16) & 0x00ff);
+        self.pulse_width = result;
     }
 
     pub fn set_sync_dest(&mut self, dest: Rc<RefCell<WaveformGenerator>>) {
