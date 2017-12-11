@@ -7,7 +7,7 @@ Port of reSID, a MOS6581 SID emulator engine, to Rust.
 ### Story
 
 This project originated from zinc64, a Commodore 64 emulator, around Jan 2017.
-It evolved to the point where it can be useful for others working on C64 sound/emulation
+It evolved to the point where it can be useful to others working on C64 sound/emulation
 so it is packaged and shipped as a standalone crate.
 
 ### Status
