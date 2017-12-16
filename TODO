@@ -1,3 +1,5 @@
 # TODO
 
-- add sampling method support
+- rustfmt
+- sed filter s/w0/w0_
+- sed filter s/v/v_

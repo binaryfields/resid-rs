@@ -22,10 +22,9 @@ use super::ChipModel;
 use super::envelope::{State as EnvState};
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
+use super::sampler::Sampler;
 use super::voice::Voice;
 
-const FIXP_SHIFT: i32 = 16;
-const FIXP_MASK: i32 = 0xffff;
 const OUTPUT_RANGE: u32 = 1 << 16;
 const OUTPUT_HALF: i32 = (OUTPUT_RANGE >> 1) as i32;
 const SAMPLES_PER_OUTPUT: u32 = (((4095 * 255) >> 7) * 3 * 15 * 2 / OUTPUT_RANGE);
@@ -129,15 +128,12 @@ pub struct Sid {
     // Functional Units
     ext_filter: ExternalFilter,
     filter: Filter,
+    sampler: Option<Sampler>,
     voices: [Voice; 3],
     // Runtime State
     bus_value: u8,
     bus_value_ttl: u32,
     ext_in: i32,
-    // Sampling State
-    cycles_per_sample: u32,
-    sample_offset: i32,
-    sample_prev: i16,
 }
 
 impl Sid {
@@ -148,19 +144,15 @@ impl Sid {
         voice1.set_sync_source(&mut voice3);
         voice2.set_sync_source(&mut voice1);
         voice3.set_sync_source(&mut voice2);
-        let mut sid = Sid {
+        Sid {
             ext_filter: ExternalFilter::new(chip_model),
             filter: Filter::new(chip_model),
+            sampler: Some(Sampler::new()),
             voices: [voice1, voice2, voice3],
             bus_value: 0,
             bus_value_ttl: 0,
             ext_in: 0,
-            cycles_per_sample: 0,
-            sample_offset: 0,
-            sample_prev: 0,
-        };
-        sid.set_sampling_parameters(985248, 44100);
-        sid
+        }
     }
 
     pub fn clock(&mut self) {
@@ -284,14 +276,15 @@ impl Sid {
     pub fn reset(&mut self) {
         self.ext_filter.reset();
         self.filter.reset();
+        if let Some(ref mut sampler) = self.sampler {
+            sampler.reset();
+        }
         for i in 0..3 {
             self.voices[i].reset();
         }
         self.bus_value = 0;
         self.bus_value_ttl = 0;
         self.ext_in = 0;
-        self.sample_offset = 0;
-        self.sample_prev = 0;
     }
 
     // ----------------------------------------------------------------------------
@@ -313,100 +306,13 @@ impl Sid {
                   buffer: &mut [i16],
                   n: usize,
                   interleave: usize) -> (usize, u32) {
-        self.sample_fast(delta, buffer, n, interleave)
-    }
-
-    // ----------------------------------------------------------------------------
-    // SID clocking with audio sampling - delta clocking picking nearest sample.
-    // ----------------------------------------------------------------------------
-    fn sample_fast(&mut self,
-                   mut delta: u32,
-                   buffer: &mut [i16],
-                   n: usize,
-                   interleave: usize) -> (usize, u32) {
-        let mut s = 0;
-        loop {
-            let next_sample_offset = self.sample_offset + self.cycles_per_sample as i32 + (1 << (FIXP_SHIFT - 1));
-            let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta {
-                break;
-            }
-            if s >= n {
-                return (s, delta);
-            }
-            self.clock_delta(delta_sample);
-            delta -= delta_sample;
-            self.sample_offset = (next_sample_offset & FIXP_MASK) - (1 << (FIXP_SHIFT - 1));
-            buffer[(s * interleave) as usize] = self.output();
-            s += 1; // TODO check w/ ref impl
+        if let Some(mut sampler) = self.sampler.take() {
+            let result = sampler.sample(self, delta, buffer, n, interleave);
+            self.sampler = Some(sampler);
+            result
+        } else {
+            panic!("invalid sampler")
         }
-        self.clock_delta(delta);
-        self.sample_offset -= (delta as i32) << FIXP_SHIFT;
-        delta = 0;
-        (s, delta)
-    }
-
-    #[allow(dead_code)]
-    fn sample_interpolate(&mut self,
-                          mut delta_t: u32,
-                          buffer: &mut [i16],
-                          n: usize,
-                          interleave: usize) -> (usize, u32) {
-        let mut s = 0;
-        loop {
-            let next_sample_offset = self.sample_offset + self.cycles_per_sample as i32;
-            let delta_t_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_t_sample > delta_t {
-                break;
-            }
-            if s >= n {
-                return (s, delta_t);
-            }
-            for _i in 0..(delta_t_sample - 1) {
-                self.sample_prev = self.output();
-                self.clock();
-            }
-            delta_t -= delta_t_sample;
-            self.sample_offset = next_sample_offset & FIXP_MASK;
-            let sample_now = self.output();
-            buffer[s * interleave] = self.sample_prev + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT) as i16;
-            s += 1; // TODO check w/ ref impl
-            self.sample_prev = sample_now;
-        }
-        for _i in 0..(delta_t - 1) {
-            self.clock();
-        }
-        self.sample_offset -= (delta_t as i32) << FIXP_SHIFT;
-        delta_t = 0;
-        (s, delta_t)
-    }
-
-    // ----------------------------------------------------------------------------
-    // Setting of SID sampling parameters.
-    //
-    // Use a clock freqency of 985248Hz for PAL C64, 1022730Hz for NTSC C64.
-    // The default end of passband frequency is pass_freq = 0.9*sample_freq/2
-    // for sample frequencies up to ~ 44.1kHz, and 20kHz for higher sample
-    // frequencies.
-    //
-    // For resampling, the ratio between the clock frequency and the sample
-    // frequency is limited as follows:
-    //   125*clock_freq/sample_freq < 16384
-    // E.g. provided a clock frequency of ~ 1MHz, the sample frequency can not
-    // be set lower than ~ 8kHz. A lower sample frequency would make the
-    // resampling code overfill its 16k sample ring buffer.
-    //
-    // The end of passband frequency is also limited:
-    //   pass_freq <= 0.9*sample_freq/2
-    //
-    // E.g. for a 44.1kHz sampling rate the end of passband frequency is limited
-    // to slightly below 20kHz. This constraint ensures that the FIR table is
-    // not overfilled.
-    // ----------------------------------------------------------------------------
-    pub fn set_sampling_parameters(&mut self, clock_freq: u32, sample_freq: u32) {
-        self.cycles_per_sample = (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
-        self.sample_offset = 0;
-        self.sample_prev = 0;
     }
 
     // -- Device I/O

@@ -24,6 +24,7 @@ mod data;
 pub mod envelope;
 pub mod external_filter;
 pub mod filter;
+pub mod sampler;
 mod sid;
 pub mod spline;
 pub mod voice;

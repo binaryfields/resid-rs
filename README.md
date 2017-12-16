@@ -26,11 +26,10 @@ v0.4 - resampling support
 | Envelope          | Done        |
 | ExternalFilter    | Done        |
 | Filter            | Done        |
+| Sampler           | Done        |
 | Spline            | Done        |
 | Wave              | Done        |
 | Sid               | Done        |
-| Sampling:Fast     | Done        |
-| Sampling:Resample | In-Progress |
 
 ## Credits
 
