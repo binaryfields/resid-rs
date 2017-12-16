@@ -380,7 +380,6 @@ impl Sampler {
                 self.sample_index += 1;
                 self.sample_index &= 0x3fff;
             }
-            let prev = self.sample_offset;
             self.sample_offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
