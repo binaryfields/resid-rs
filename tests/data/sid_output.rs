@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub static RESID_OUTPUT: [i16; 4851] = [
     15417, 16016, 15991, 15956, 15921, 15886, 15852, 15817,
     15782, 15748, 15713, 15679, 15644, 15610, 15576, 15541,

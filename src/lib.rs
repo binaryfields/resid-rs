@@ -37,3 +37,4 @@ pub enum ChipModel {
 }
 
 pub use self::sid::Sid;
+pub use self::sampler::SamplingMethod;

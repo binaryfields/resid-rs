@@ -67,18 +67,15 @@ impl Voice {
                 wave_zero: WAVE_ZERO,
                 voice_dc: VOICE_DC,
                 envelope: EnvelopeGenerator::new(),
-                wave: Rc::new(RefCell::new(
-                    WaveformGenerator::new(chip_model)
-                ))
+                wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
             },
-            ChipModel::Mos8580 => Voice { // No DC offsets in the MOS8580.
+            ChipModel::Mos8580 => Voice {
+                // No DC offsets in the MOS8580.
                 wave_zero: 0x800,
                 voice_dc: 0,
                 envelope: EnvelopeGenerator::new(),
-                wave: Rc::new(RefCell::new(
-                    WaveformGenerator::new(chip_model)
-                ))
-            }
+                wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
+            },
         }
     }
 

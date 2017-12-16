@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub static RESID_OUTPUT: [i32; 2048] = [
     220, 220, 220, 220, 220, 220, 220, 220,
     220, 220, 220, 220, 220, 220, 220, 220,

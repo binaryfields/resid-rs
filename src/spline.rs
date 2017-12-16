@@ -118,7 +118,7 @@ pub struct Point {
 }
 
 pub struct PointPlotter {
-    output: Vec<i32>
+    output: Vec<i32>,
 }
 
 impl PointPlotter {
@@ -141,12 +141,14 @@ impl PointPlotter {
 // ----------------------------------------------------------------------------
 // Calculation of coefficients.
 // ----------------------------------------------------------------------------
-fn cubic_coefficients(x1: f64,
-                      y1: f64,
-                      x2: f64,
-                      y2: f64,
-                      k1: f64,
-                      k2: f64) -> (f64, f64, f64, f64) {
+fn cubic_coefficients(
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    k1: f64,
+    k2: f64,
+) -> (f64, f64, f64, f64) {
     let dx = x2 - x1;
     let dy = y2 - y1;
     let a = ((k1 + k2) - 2.0 * dy / dx) / (dx * dx);
@@ -160,14 +162,16 @@ fn cubic_coefficients(x1: f64,
 // Evaluation of cubic polynomial by brute force.
 // ----------------------------------------------------------------------------
 #[allow(dead_code)]
-fn interpolate_brute_force(x1: f64,
-                           y1: f64,
-                           x2: f64,
-                           y2: f64,
-                           k1: f64,
-                           k2: f64,
-                           plotter: &mut PointPlotter,
-                           res: f64) {
+fn interpolate_brute_force(
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    k1: f64,
+    k2: f64,
+    plotter: &mut PointPlotter,
+    res: f64,
+) {
     let (a, b, c, d) = cubic_coefficients(x1, y1, x2, y2, k1, k2);
     // Calculate each point.
     let mut x = x1;
@@ -181,14 +185,16 @@ fn interpolate_brute_force(x1: f64,
 // ----------------------------------------------------------------------------
 // Evaluation of cubic polynomial by forward differencing.
 // ----------------------------------------------------------------------------
-fn interpolate_forward_difference(x1: f64,
-                                  y1: f64,
-                                  x2: f64,
-                                  y2: f64,
-                                  k1: f64,
-                                  k2: f64,
-                                  plotter: &mut PointPlotter,
-                                  res: f64) {
+fn interpolate_forward_difference(
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    k1: f64,
+    k2: f64,
+    plotter: &mut PointPlotter,
+    res: f64,
+) {
     let (a, b, c, d) = cubic_coefficients(x1, y1, x2, y2, k1, k2);
     let mut y = ((a * x1 + b) * x1 + c) * x1 + d;
     let mut dy = (3.0 * a * (x1 + res) + 2.0 * b) * x1 * res + ((a * res + b) * res + c) * res;

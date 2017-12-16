@@ -22,6 +22,7 @@ extern crate resid;
 use resid::ChipModel;
 use resid::external_filter::ExternalFilter;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 static RESID_OUTPUT: [i32; 41] = [
     0, -100, -184, -255, -314, -362, -400, -429,
     -450, -464, -471, -472, -468, -460, -447, -431,
@@ -31,6 +32,7 @@ static RESID_OUTPUT: [i32; 41] = [
     544
 ];
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 static RESID_DELTA_OUTPUT: [i32; 41] = [
     -989, -927, -864, -801, -738, -675, -612, -549,
     -486, -423, -360, -297, -234, -171, -108, -45,
@@ -53,7 +55,6 @@ fn clock() {
         index += 1;
     }
 }
-
 
 #[test]
 fn clock_delta() {

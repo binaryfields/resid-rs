@@ -19,10 +19,10 @@
  */
 
 use super::ChipModel;
-use super::envelope::{State as EnvState};
+use super::envelope::State as EnvState;
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
-use super::sampler::Sampler;
+use super::sampler::{Sampler, SamplingMethod};
 use super::voice::Voice;
 
 const OUTPUT_RANGE: u32 = 1 << 16;
@@ -144,7 +144,7 @@ impl Sid {
         voice1.set_sync_source(&mut voice3);
         voice2.set_sync_source(&mut voice1);
         voice3.set_sync_source(&mut voice2);
-        Sid {
+        let mut sid = Sid {
             ext_filter: ExternalFilter::new(chip_model),
             filter: Filter::new(chip_model),
             sampler: Some(Sampler::new()),
@@ -152,6 +152,14 @@ impl Sid {
             bus_value: 0,
             bus_value_ttl: 0,
             ext_in: 0,
+        };
+        sid.set_sampling_parameters(SamplingMethod::Fast, 985248, 44100);
+        sid
+    }
+
+    pub fn set_sampling_parameters(&mut self, method: SamplingMethod, clock_freq: u32, sample_freq: u32) {
+        if let Some(ref mut sampler) = self.sampler {
+            sampler.set_parameters(method, clock_freq, sample_freq);
         }
     }
 
@@ -176,10 +184,12 @@ impl Sid {
             self.voices[i].wave.borrow_mut().synchronize();
         }
         // Clock filter.
-        self.filter.clock(self.voices[0].output(),
-                          self.voices[1].output(),
-                          self.voices[2].output(),
-                          self.ext_in);
+        self.filter.clock(
+            self.voices[0].output(),
+            self.voices[1].output(),
+            self.voices[2].output(),
+            self.ext_in,
+        );
         // Clock external filter.
         self.ext_filter.clock(self.filter.output());
     }
@@ -238,11 +248,13 @@ impl Sid {
             delta_osc -= delta_min;
         }
         // Clock filter.
-        self.filter.clock_delta(delta,
-                                self.voices[0].output(),
-                                self.voices[1].output(),
-                                self.voices[2].output(),
-                                self.ext_in);
+        self.filter.clock_delta(
+            delta,
+            self.voices[0].output(),
+            self.voices[1].output(),
+            self.voices[2].output(),
+            self.ext_in,
+        );
         // Clock external filter.
         self.ext_filter.clock_delta(delta, self.filter.output());
     }
@@ -301,11 +313,13 @@ impl Sid {
     // }
     //
     // ----------------------------------------------------------------------------
-    pub fn sample(&mut self,
-                  delta: u32,
-                  buffer: &mut [i16],
-                  n: usize,
-                  interleave: usize) -> (usize, u32) {
+    pub fn sample(
+        &mut self,
+        delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         if let Some(mut sampler) = self.sampler.take() {
             let result = sampler.sample(self, delta, buffer, n, interleave);
             self.sampler = Some(sampler);
@@ -490,7 +504,7 @@ impl Sid {
             envelope.exponential_counter = state.exponential_counter[i];
             envelope.exponential_counter_period = state.exponential_counter_period[i];
             envelope.hold_zero = if state.hold_zero[i] != 0 { true } else { false };
-            envelope.rate_counter = state.rate_counter[i] ;
+            envelope.rate_counter = state.rate_counter[i];
             envelope.rate_counter_period = state.rate_counter_period[i];
         }
     }

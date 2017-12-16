@@ -67,12 +67,18 @@ pub struct WaveformGenerator {
 impl WaveformGenerator {
     pub fn new(chip_model: ChipModel) -> WaveformGenerator {
         let (wave_ps, wave_pst, wave_pt, wave_st) = match chip_model {
-            ChipModel::Mos6581 => {
-                (&data::WAVE6581_PS, &data::WAVE6581_PST, &data::WAVE6581_PT, &data::WAVE6581_ST)
-            }
-            ChipModel::Mos8580 => {
-                (&data::WAVE8580_PS, &data::WAVE8580_PST, &data::WAVE8580_PT, &data::WAVE8580_ST)
-            }
+            ChipModel::Mos6581 => (
+                &data::WAVE6581_PS,
+                &data::WAVE6581_PST,
+                &data::WAVE6581_PT,
+                &data::WAVE6581_ST,
+            ),
+            ChipModel::Mos8580 => (
+                &data::WAVE8580_PS,
+                &data::WAVE8580_PST,
+                &data::WAVE8580_PT,
+                &data::WAVE8580_ST,
+            ),
         };
         let mut waveform = WaveformGenerator {
             sync_source: None,
@@ -245,12 +251,16 @@ impl WaveformGenerator {
                     // NB! Requires two's complement integer.
                     if shift_period <= 0x080000 {
                         // Check for flip from 0 to 1.
-                        if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0 || (self.acc & ACC_BIT19_MASK) == 0 {
+                        if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
+                            || (self.acc & ACC_BIT19_MASK) == 0
+                        {
                             break;
                         }
                     } else {
                         // Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
-                        if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0 && (self.acc & ACC_BIT19_MASK) == 0 {
+                        if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
+                            && (self.acc & ACC_BIT19_MASK) == 0
+                        {
                             break;
                         }
                     }
@@ -356,14 +366,10 @@ impl WaveformGenerator {
     // Since waveform output is 12 bits the output is left-shifted 4 times.
     //
     fn output_n(&self) -> u16 {
-        (((self.shift & 0x400000) >> 11) |
-            ((self.shift & 0x100000) >> 10) |
-            ((self.shift & 0x010000) >> 7) |
-            ((self.shift & 0x002000) >> 5) |
-            ((self.shift & 0x000800) >> 4) |
-            ((self.shift & 0x000080) >> 1) |
-            ((self.shift & 0x000010) << 1) |
-            ((self.shift & 0x000004) << 2)) as u16
+        (((self.shift & 0x400000) >> 11) | ((self.shift & 0x100000) >> 10)
+            | ((self.shift & 0x010000) >> 7) | ((self.shift & 0x002000) >> 5)
+            | ((self.shift & 0x000800) >> 4) | ((self.shift & 0x000080) >> 1)
+            | ((self.shift & 0x000010) << 1) | ((self.shift & 0x000004) << 2)) as u16
     }
 
     // Pulse:
@@ -377,7 +383,11 @@ impl WaveformGenerator {
     // regardless of the pulse width setting.
     //
     fn output_p(&self) -> u16 {
-        if self.test || ((self.acc >> 12) as u16 >= self.pulse_width) { 0x0fff } else { 0x0000 }
+        if self.test || ((self.acc >> 12) as u16 >= self.pulse_width) {
+            0x0fff
+        } else {
+            0x0000
+        }
     }
 
     // Sawtooth:
@@ -395,9 +405,14 @@ impl WaveformGenerator {
     // Ring modulation substitutes the MSB with MSB EOR sync_source MSB.
     //
     fn output_t(&self) -> u16 {
-        let acc = if self.ring { self.acc ^ self.get_sync_source_acc() } else { self.acc };
+        let acc = if self.ring {
+            self.acc ^ self.get_sync_source_acc()
+        } else {
+            self.acc
+        };
         let msb = acc & ACC_MSB_MASK;
-        let output = if msb != 0 { !self.acc } else { self.acc };
+        let output =
+            if msb != 0 { !self.acc } else { self.acc };
         (output >> 11) as u16 & OUTPUT_MASK
     }
 

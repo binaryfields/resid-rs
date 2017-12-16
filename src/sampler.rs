@@ -41,7 +41,7 @@ pub enum SamplingMethod {
     Fast,
     Interpolate,
     Resample,
-    ResampleFast
+    ResampleFast,
 }
 
 pub struct Sampler {
@@ -60,7 +60,7 @@ pub struct Sampler {
 
 impl Sampler {
     pub fn new() -> Sampler {
-        let mut sampler = Sampler {
+        Sampler {
             cycles_per_sample: 0,
             fir: Vec::new(),
             fir_n: 0,
@@ -70,16 +70,16 @@ impl Sampler {
             sample_index: 0,
             sample_offset: 0,
             sample_prev: 0,
-        };
-        sampler.set_parameters(SamplingMethod::Resample, 985248, 44100);
-        sampler
+        }
     }
 
     pub fn set_parameters(&mut self, method: SamplingMethod, clock_freq: u32, sample_freq: u32) {
-        self.cycles_per_sample = (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
+        self.cycles_per_sample =
+            (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
         self.sampling_method = method;
-        if self.sampling_method == SamplingMethod::Resample ||
-            self.sampling_method == SamplingMethod::ResampleFast {
+        if self.sampling_method == SamplingMethod::Resample
+            || self.sampling_method == SamplingMethod::ResampleFast
+        {
             self.init_fir(clock_freq as f64, sample_freq as f64, -1.0, 0.97);
         }
         // Clear state
@@ -97,33 +97,39 @@ impl Sampler {
         self.sample_prev = 0;
     }
 
-    pub fn sample(&mut self,
-                  sid: &mut Sid,
-                  delta: u32,
-                  buffer: &mut [i16],
-                  n: usize,
-                  interleave: usize) -> (usize, u32) {
+    pub fn sample(
+        &mut self,
+        sid: &mut Sid,
+        delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         match self.sampling_method {
-            SamplingMethod::Fast =>
-                self.clock_fast(sid, delta, buffer, n, interleave),
-            SamplingMethod::Interpolate =>
-                self.clock_interpolate(sid, delta, buffer, n, interleave),
-            SamplingMethod::Resample =>
-                self.clock_resample_interpolate(sid, delta, buffer, n, interleave),
-            SamplingMethod::ResampleFast =>
-                self.clock_resample_fast(sid, delta, buffer, n, interleave),
+            SamplingMethod::Fast => self.clock_fast(sid, delta, buffer, n, interleave),
+            SamplingMethod::Interpolate => {
+                self.clock_interpolate(sid, delta, buffer, n, interleave)
+            }
+            SamplingMethod::Resample => {
+                self.clock_resample_interpolate(sid, delta, buffer, n, interleave)
+            }
+            SamplingMethod::ResampleFast => {
+                self.clock_resample_fast(sid, delta, buffer, n, interleave)
+            }
         }
     }
 
     // ----------------------------------------------------------------------------
     // SID clocking with audio sampling - delta clocking picking nearest sample.
     // ----------------------------------------------------------------------------
-    fn clock_fast(&mut self,
-                  sid: &mut Sid,
-                  mut delta: u32,
-                  buffer: &mut [i16],
-                  n: usize,
-                  interleave: usize) -> (usize, u32) {
+    fn clock_fast(
+        &mut self,
+        sid: &mut Sid,
+        mut delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         let mut index = 0;
         loop {
             let next_sample_offset = self.get_next_sample_offset();
@@ -146,12 +152,14 @@ impl Sampler {
         }
     }
 
-    fn clock_interpolate(&mut self,
-                         sid: &mut Sid,
-                         mut delta: u32,
-                         buffer: &mut [i16],
-                         n: usize,
-                         interleave: usize) -> (usize, u32) {
+    fn clock_interpolate(
+        &mut self,
+        sid: &mut Sid,
+        mut delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         let mut index = 0;
         loop {
             let next_sample_offset = self.get_next_sample_offset();
@@ -165,7 +173,9 @@ impl Sampler {
             }
             delta -= delta_sample;
             let sample_now = sid.output();
-            buffer[index * interleave] = self.sample_prev + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT) as i16;
+            buffer[index * interleave] = self.sample_prev
+                + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT)
+                    as i16;
             index += 1;
             self.sample_prev = sample_now;
             self.update_sample_offset(next_sample_offset);
@@ -217,12 +227,14 @@ impl Sampler {
     // NB! the result of right shifting negative numbers is really
     // implementation dependent in the C++ standard.
     // ----------------------------------------------------------------------------
-    fn clock_resample_interpolate(&mut self,
-                                  sid: &mut Sid,
-                                  mut delta: u32,
-                                  buffer: &mut [i16],
-                                  n: usize,
-                                  interleave: usize) -> (usize, u32) {
+    fn clock_resample_interpolate(
+        &mut self,
+        sid: &mut Sid,
+        mut delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         let mut index = 0;
         let half = 1i32 << 15;
         loop {
@@ -253,7 +265,8 @@ impl Sampler {
             // Convolution with filter impulse response.
             let v1 = self.compute_convolution_fir_index(
                 &self.sample_buffer[sample_start_1..sample_end_1],
-                &self.fir[fir_start_1..fir_end_1]);
+                &self.fir[fir_start_1..fir_end_1],
+            );
 
             // Use next FIR table, wrap around to first FIR table using
             // previous sample.
@@ -269,7 +282,8 @@ impl Sampler {
 
             let v2 = self.compute_convolution_fir_index(
                 &self.sample_buffer[sample_start_2..sample_end_2],
-                &self.fir[fir_start_2..fir_end_2]);
+                &self.fir[fir_start_2..fir_end_2],
+            );
 
             // Linear interpolation.
             // fir_offset_rmd is equal for all samples, it can thus be factorized out:
@@ -296,7 +310,6 @@ impl Sampler {
                 self.sample_index += 1;
                 self.sample_index &= 0x3fff;
             }
-            let prev = self.sample_offset;
             self.sample_offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
@@ -307,12 +320,14 @@ impl Sampler {
     // ----------------------------------------------------------------------------
     // SID clocking with audio sampling - cycle based with audio resampling.
     // ----------------------------------------------------------------------------
-    fn clock_resample_fast(&mut self,
-                           sid: &mut Sid,
-                           mut delta: u32,
-                           buffer: &mut [i16],
-                           n: usize,
-                           interleave: usize) -> (usize, u32) {
+    fn clock_resample_fast(
+        &mut self,
+        sid: &mut Sid,
+        mut delta: u32,
+        buffer: &mut [i16],
+        n: usize,
+        interleave: usize,
+    ) -> (usize, u32) {
         let mut index = 0;
         let half = 1i32 << 15;
         loop {
@@ -342,7 +357,8 @@ impl Sampler {
             // Convolution with filter impulse response.
             let mut v = self.compute_convolution_fir_index(
                 &self.sample_buffer[sample_start..sample_end],
-                &self.fir[fir_start..fir_end]);
+                &self.fir[fir_start..fir_end],
+            );
             v >>= FIR_SHIFT;
 
             // Saturated arithmetics to guard against 16 bit sample overflow.
@@ -437,7 +453,13 @@ impl Sampler {
         self.sample_offset = next_sample_offset & FIXP_MASK;
     }
 
-    fn init_fir(&mut self, clock_freq: f64, sample_freq: f64, mut pass_freq: f64, filter_scale: f64) {
+    fn init_fir(
+        &mut self,
+        clock_freq: f64,
+        sample_freq: f64,
+        mut pass_freq: f64,
+        filter_scale: f64,
+    ) {
         let pi = 3.1415926535897932385;
         let samples_per_cycle = sample_freq / clock_freq;
         let cycles_per_sample = clock_freq / sample_freq;
@@ -502,7 +524,8 @@ impl Sampler {
                     0f64
                 };
                 let sincwt = if wt.abs() >= 1e-6 { wt.sin() / wt } else { 1.0 };
-                let val = (1i32 << FIR_SHIFT) as f64 * filter_scale * samples_per_cycle * wc / pi * sincwt * kaiser;
+                let val = (1i32 << FIR_SHIFT) as f64 * filter_scale * samples_per_cycle * wc / pi
+                    * sincwt * kaiser;
                 self.fir[(fir_offset + j) as usize] = (val + 0.5) as i16;
             }
         }

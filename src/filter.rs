@@ -77,66 +77,64 @@ const MIXER_DC: i32 = -0xfff * 0xff / 18 >> 7;
 //
 // NB! Cutoff frequency characteristics may vary, we have modeled two
 // particular Commodore 64s.
-static FO_POINTS_6581: [(i32, i32); 31] =
-[
+static FO_POINTS_6581: [(i32, i32); 31] = [
     //  FC      f         FCHI FCLO
     // ----------------------------
-    (0, 220), // 0x00      - repeated end point
-    (0, 220), // 0x00
-    (128, 230), // 0x10
-    (256, 250), // 0x20
-    (384, 300), // 0x30
-    (512, 420), // 0x40
-    (640, 780), // 0x50
-    (768, 1600), // 0x60
-    (832, 2300), // 0x68
-    (896, 3200), // 0x70
-    (960, 4300), // 0x78
-    (992, 5000), // 0x7c
-    (1008, 5400), // 0x7e
-    (1016, 5700), // 0x7f
-    (1023, 6000), // 0x7f 0x07
-    (1023, 6000), // 0x7f 0x07 - discontinuity
-    (1024, 4600), // 0x80      -
-    (1024, 4600), // 0x80
-    (1032, 4800), // 0x81
-    (1056, 5300), // 0x84
-    (1088, 6000), // 0x88
-    (1120, 6600), // 0x8c
-    (1152, 7200), // 0x90
-    (1280, 9500), // 0xa0
+    (0, 220),      // 0x00      - repeated end point
+    (0, 220),      // 0x00
+    (128, 230),    // 0x10
+    (256, 250),    // 0x20
+    (384, 300),    // 0x30
+    (512, 420),    // 0x40
+    (640, 780),    // 0x50
+    (768, 1600),   // 0x60
+    (832, 2300),   // 0x68
+    (896, 3200),   // 0x70
+    (960, 4300),   // 0x78
+    (992, 5000),   // 0x7c
+    (1008, 5400),  // 0x7e
+    (1016, 5700),  // 0x7f
+    (1023, 6000),  // 0x7f 0x07
+    (1023, 6000),  // 0x7f 0x07 - discontinuity
+    (1024, 4600),  // 0x80      -
+    (1024, 4600),  // 0x80
+    (1032, 4800),  // 0x81
+    (1056, 5300),  // 0x84
+    (1088, 6000),  // 0x88
+    (1120, 6600),  // 0x8c
+    (1152, 7200),  // 0x90
+    (1280, 9500),  // 0xa0
     (1408, 12000), // 0xb0
     (1536, 14500), // 0xc0
     (1664, 16000), // 0xd0
     (1792, 17100), // 0xe0
     (1920, 17700), // 0xf0
     (2047, 18000), // 0xff 0x07
-    (2047, 18000)    // 0xff 0x07 - repeated end point
+    (2047, 18000), // 0xff 0x07 - repeated end point
 ];
 
-static FO_POINTS_8580: [(i32, i32); 19] =
-[
+static FO_POINTS_8580: [(i32, i32); 19] = [
     //  FC      f         FCHI FCLO
     // ----------------------------
-    (    0,     0 ),   // 0x00      - repeated end point
-    (    0,     0 ),   // 0x00
-    (  128,   800 ),   // 0x10
-    (  256,  1600 ),   // 0x20
-    (  384,  2500 ),   // 0x30
-    (  512,  3300 ),   // 0x40
-    (  640,  4100 ),   // 0x50
-    (  768,  4800 ),   // 0x60
-    (  896,  5600 ),   // 0x70
-    ( 1024,  6500 ),   // 0x80
-    ( 1152,  7500 ),   // 0x90
-    ( 1280,  8400 ),   // 0xa0
-    ( 1408,  9200 ),   // 0xb0
-    ( 1536,  9800 ),   // 0xc0
-    ( 1664, 10500 ),   // 0xd0
-    ( 1792, 11000 ),   // 0xe0
-    ( 1920, 11700 ),   // 0xf0
-    ( 2047, 12500 ),   // 0xff 0x07
-    ( 2047, 12500 )    // 0xff 0x07 - repeated end point
+    (0, 0),        // 0x00      - repeated end point
+    (0, 0),        // 0x00
+    (128, 800),    // 0x10
+    (256, 1600),   // 0x20
+    (384, 2500),   // 0x30
+    (512, 3300),   // 0x40
+    (640, 4100),   // 0x50
+    (768, 4800),   // 0x60
+    (896, 5600),   // 0x70
+    (1024, 6500),  // 0x80
+    (1152, 7500),  // 0x90
+    (1280, 8400),  // 0xa0
+    (1408, 9200),  // 0xb0
+    (1536, 9800),  // 0xc0
+    (1664, 10500), // 0xd0
+    (1792, 11000), // 0xe0
+    (1920, 11700), // 0xf0
+    (2047, 12500), // 0xff 0x07
+    (2047, 12500), // 0xff 0x07 - repeated end point
 ];
 
 pub struct Filter {
@@ -242,17 +240,17 @@ impl Filter {
         self.set_q();
     }
 
-    pub fn clock(&mut self,
-                 mut voice1: i32,
-                 mut voice2: i32,
-                 mut voice3: i32,
-                 mut ext_in: i32) {
+    pub fn clock(&mut self, mut voice1: i32, mut voice2: i32, mut voice3: i32, mut ext_in: i32) {
         // Scale each voice down from 20 to 13 bits.
         voice1 >>= 7;
         voice2 >>= 7;
         // NB! Voice 3 is not silenced by voice3off if it is routed through
         // the filter.
-        voice3 = if self.voice3_off && self.filt & 0x04 == 0 { 0 } else { voice3 >> 7 };
+        voice3 = if self.voice3_off && self.filt & 0x04 == 0 {
+            0
+        } else {
+            voice3 >> 7
+        };
         ext_in >>= 7;
 
         // This is handy for testing.
@@ -273,67 +271,67 @@ impl Filter {
             0x0 => {
                 self.vnf = voice1 + voice2 + voice3 + ext_in;
                 0
-            },
+            }
             0x1 => {
                 self.vnf = voice2 + voice3 + ext_in;
                 voice1
-            },
+            }
             0x2 => {
                 self.vnf = voice1 + voice3 + ext_in;
                 voice2
-            },
+            }
             0x3 => {
                 self.vnf = voice3 + ext_in;
                 voice1 + voice2
-            },
+            }
             0x4 => {
                 self.vnf = voice1 + voice2 + ext_in;
                 voice3
-            },
+            }
             0x5 => {
                 self.vnf = voice2 + ext_in;
                 voice1 + voice3
-            },
+            }
             0x6 => {
                 self.vnf = voice1 + ext_in;
                 voice2 + voice3
-            },
+            }
             0x7 => {
                 self.vnf = ext_in;
                 voice1 + voice2 + voice3
-            },
+            }
             0x8 => {
                 self.vnf = voice1 + voice2 + voice3;
                 ext_in
-            },
+            }
             0x9 => {
                 self.vnf = voice2 + voice3;
                 voice1 + ext_in
-            },
+            }
             0xa => {
                 self.vnf = voice1 + voice3;
                 voice2 + ext_in
-            },
+            }
             0xb => {
                 self.vnf = voice3;
                 voice1 + voice2 + ext_in
-            },
+            }
             0xc => {
                 self.vnf = voice1 + voice2;
                 voice3 + ext_in
-            },
+            }
             0xd => {
                 self.vnf = voice2;
                 voice1 + voice3 + ext_in
-            },
+            }
             0xe => {
                 self.vnf = voice1;
                 voice2 + voice3 + ext_in
-            },
+            }
             0xf => {
                 self.vnf = 0;
                 voice1 + voice2 + voice3 + ext_in
-            },
+            }
             _ => {
                 self.vnf = voice1 + voice2 + voice3 + ext_in;
                 0
@@ -354,12 +352,14 @@ impl Filter {
         self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
     }
 
-    pub fn clock_delta(&mut self,
-                       mut delta: u32,
-                       mut voice1: i32,
-                       mut voice2: i32,
-                       mut voice3: i32,
-                       mut ext_in: i32) {
+    pub fn clock_delta(
+        &mut self,
+        mut delta: u32,
+        mut voice1: i32,
+        mut voice2: i32,
+        mut voice3: i32,
+        mut ext_in: i32,
+    ) {
         // Scale each voice down from 20 to 13 bits.
         voice1 >>= 7;
         voice2 >>= 7;
@@ -390,67 +390,67 @@ impl Filter {
             0x0 => {
                 self.vnf = voice1 + voice2 + voice3 + ext_in;
                 0
-            },
+            }
             0x1 => {
                 self.vnf = voice2 + voice3 + ext_in;
                 voice1
-            },
+            }
             0x2 => {
                 self.vnf = voice1 + voice3 + ext_in;
                 voice2
-            },
+            }
             0x3 => {
                 self.vnf = voice3 + ext_in;
                 voice1 + voice2
-            },
+            }
             0x4 => {
                 self.vnf = voice1 + voice2 + ext_in;
                 voice3
-            },
+            }
             0x5 => {
                 self.vnf = voice2 + ext_in;
                 voice1 + voice3
-            },
+            }
             0x6 => {
                 self.vnf = voice1 + ext_in;
                 voice2 + voice3
-            },
+            }
             0x7 => {
                 self.vnf = ext_in;
                 voice1 + voice2 + voice3
-            },
+            }
             0x8 => {
                 self.vnf = voice1 + voice2 + voice3;
                 ext_in
-            },
+            }
             0x9 => {
                 self.vnf = voice2 + voice3;
                 voice1 + ext_in
-            },
+            }
             0xa => {
                 self.vnf = voice1 + voice3;
                 voice2 + ext_in
-            },
+            }
             0xb => {
                 self.vnf = voice3;
                 voice1 + voice2 + ext_in
-            },
+            }
             0xc => {
                 self.vnf = voice1 + voice2;
                 voice3 + ext_in
-            },
+            }
             0xd => {
                 self.vnf = voice2;
                 voice1 + voice3 + ext_in
-            },
+            }
             0xe => {
                 self.vnf = voice1;
                 voice2 + voice3 + ext_in
-            },
+            }
             0xf => {
                 self.vnf = 0;
                 voice1 + voice2 + voice3 + ext_in
-            },
+            }
             _ => {
                 self.vnf = voice1 + voice2 + voice3 + ext_in;
                 0
@@ -529,12 +529,11 @@ impl Filter {
     }
 
     fn set_f0(&mut self) {
-        let points = self.f0_points.into_iter()
-            .map(|&pt| {
-                spline::Point {
-                    x: pt.0 as f64,
-                    y: pt.1 as f64,
-                }
+        let points = self.f0_points
+            .into_iter()
+            .map(|&pt| spline::Point {
+                x: pt.0 as f64,
+                y: pt.1 as f64,
             })
             .collect::<Vec<spline::Point>>();
         let mut plotter = spline::PointPlotter::new(2048);
@@ -562,10 +561,18 @@ impl Filter {
 
         // Limit f0 to 16kHz to keep 1 cycle filter stable.
         let w0_max_1 = (2.0 * f64::consts::PI * 16000.0 * 1.048576) as i32;
-        self.w0_ceil_1 = if self.w0 <= w0_max_1 { self.w0 } else { w0_max_1 };
+        self.w0_ceil_1 = if self.w0 <= w0_max_1 {
+            self.w0
+        } else {
+            w0_max_1
+        };
 
         // Limit f0 to 4kHz to keep delta_t cycle filter stable.
         let w0_max_dt = (2.0 * f64::consts::PI * 4000.0 * 1.048576) as i32;
-        self.w0_ceil_dt = if self.w0 <= w0_max_dt { self.w0 } else { w0_max_dt };
+        self.w0_ceil_dt = if self.w0 <= w0_max_dt {
+            self.w0
+        } else {
+            w0_max_dt
+        };
     }
 }

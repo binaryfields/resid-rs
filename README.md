@@ -12,12 +12,10 @@ so it is packaged and shipped as a standalone crate.
 
 ### Status
 
-The port has reached compliance with original resid implementation as of version 0.3.
-The output has been tested and verified to match original implementation.
-
-### Roadmap
-
-v0.4 - resampling support
+The port has reached compliance with the original resid implementation as of version 0.3.
+Output has been tested and verified to match the original implementation.
+Full sampler support has been added to v0.4 which reached feature parity
+with resid.
 
 ### Components
 
