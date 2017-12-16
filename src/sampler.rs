@@ -30,6 +30,7 @@ use super::Sid;
 // For a resolution of 16 bits this yields L >= 285 and L >= 51473,
 // respectively.
 const FIR_RES_FAST: i32 = 51473;
+const FIR_RES_INTERPOLATE: i32 = 285;
 const FIR_SHIFT: i32 = 15;
 const RINGSIZE: usize = 16384;
 
@@ -106,7 +107,9 @@ impl Sampler {
         interleave: usize,
     ) -> (usize, u32) {
         match self.sampling_method {
-            SamplingMethod::Fast => self.clock_fast(sid, delta, buffer, n, interleave),
+            SamplingMethod::Fast => {
+                self.clock_fast(sid, delta, buffer, n, interleave)
+            },
             SamplingMethod::Interpolate => {
                 self.clock_interpolate(sid, delta, buffer, n, interleave)
             }
@@ -499,7 +502,11 @@ impl Sampler {
 
         // We clamp the filter table resolution to 2^n, making the fixpoint
         // sample_offset a whole multiple of the filter table resolution.
-        let res = FIR_RES_FAST;
+        let res = if self.sampling_method == SamplingMethod::Resample {
+            FIR_RES_INTERPOLATE
+        } else {
+            FIR_RES_FAST
+        };
         let n = ((res as f64 / cycles_per_sample).ln() / (2.0f64).ln()).ceil() as i32;
         self.fir_res = 1 << n;
 
