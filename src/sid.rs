@@ -157,7 +157,12 @@ impl Sid {
         sid
     }
 
-    pub fn set_sampling_parameters(&mut self, method: SamplingMethod, clock_freq: u32, sample_freq: u32) {
+    pub fn set_sampling_parameters(
+        &mut self,
+        method: SamplingMethod,
+        clock_freq: u32,
+        sample_freq: u32,
+    ) {
         if let Some(ref mut sampler) = self.sampler {
             sampler.set_parameters(method, clock_freq, sample_freq);
         }
