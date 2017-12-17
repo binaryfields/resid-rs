@@ -283,7 +283,7 @@ impl Sampler {
             let fir_end_2 = fir_start_2 + self.fir_n as usize;
             let sample_end_2 = sample_start_2 + self.fir_n as usize;
 
-            let v2 = self.compute_convolution_fir_index(
+            let v2 = self.compute_convolution_fir_unroll(
                 &self.sample_buffer[sample_start_2..sample_end_2],
                 &self.fir[fir_start_2..fir_end_2],
             );
@@ -358,7 +358,7 @@ impl Sampler {
             let sample_end = sample_start + self.fir_n as usize;
 
             // Convolution with filter impulse response.
-            let mut v = self.compute_convolution_fir_index(
+            let mut v = self.compute_convolution_fir_unroll(
                 &self.sample_buffer[sample_start..sample_end],
                 &self.fir[fir_start..fir_end],
             );
