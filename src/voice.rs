@@ -98,6 +98,7 @@ impl Voice {
     Amplitude modulated 20-bit waveform output.
     Range [-2048*255, 2047*255].
     */
+    #[inline]
     pub fn output(&self) -> i32 {
         // Multiply oscillator output with envelope output.
         (self.wave.borrow().output() as i32 - self.wave_zero) * self.envelope.output() as i32

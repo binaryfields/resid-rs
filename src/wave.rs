@@ -92,10 +92,10 @@ impl WaveformGenerator {
             acc: 0,
             shift: 0,
             msb_rising: false,
-            wave_ps: wave_ps,
-            wave_pst: wave_pst,
-            wave_pt: wave_pt,
-            wave_st: wave_st,
+            wave_ps,
+            wave_pst,
+            wave_pt,
+            wave_st,
         };
         waveform.reset();
         waveform
@@ -217,6 +217,7 @@ impl WaveformGenerator {
         self.sync_source = Some(source);
     }
 
+    #[inline]
     pub fn clock(&mut self) {
         // No operation if test bit is set.
         if !self.test {
@@ -233,6 +234,7 @@ impl WaveformGenerator {
         }
     }
 
+    #[inline]
     pub fn clock_delta(&mut self, delta: u32) {
         if !self.test {
             let acc_prev = self.acc;
@@ -274,6 +276,7 @@ impl WaveformGenerator {
     }
 
     /* 12-bit waveform output. */
+    #[inline]
     pub fn output(&self) -> u16 {
         match self.waveform {
             0x0 => 0,
@@ -319,6 +322,7 @@ impl WaveformGenerator {
     Note that the oscillators must be clocked exactly on the cycle when the
     MSB is set high for hard sync to operate correctly. See SID::clock().
     */
+    #[inline]
     pub fn synchronize(&mut self) {
         // A special case occurs when a sync source is synced itself on the same
         // cycle as when its MSB is set high. In this case the destination will
@@ -365,6 +369,7 @@ impl WaveformGenerator {
     //
     // Since waveform output is 12 bits the output is left-shifted 4 times.
     //
+    #[inline]
     fn output_n(&self) -> u16 {
         (((self.shift & 0x400000) >> 11) | ((self.shift & 0x100000) >> 10)
             | ((self.shift & 0x010000) >> 7) | ((self.shift & 0x002000) >> 5)
@@ -382,6 +387,7 @@ impl WaveformGenerator {
     // The test bit, when set to one, holds the pulse waveform output at 0xfff
     // regardless of the pulse width setting.
     //
+    #[inline]
     fn output_p(&self) -> u16 {
         if self.test || ((self.acc >> 12) as u16 >= self.pulse_width) {
             0x0fff
@@ -393,6 +399,7 @@ impl WaveformGenerator {
     // Sawtooth:
     // The output is identical to the upper 12 bits of the accumulator.
     //
+    #[inline]
     fn output_s(&self) -> u16 {
         (self.acc >> 12) as u16
     }
@@ -404,6 +411,7 @@ impl WaveformGenerator {
     // left-shifted (half the resolution, full amplitude).
     // Ring modulation substitutes the MSB with MSB EOR sync_source MSB.
     //
+    #[inline]
     fn output_t(&self) -> u16 {
         let acc = if self.ring {
             self.acc ^ self.get_sync_source_acc()
@@ -418,18 +426,22 @@ impl WaveformGenerator {
 
     // -- Combined Waveforms
 
+    #[inline]
     fn output_ps(&self) -> u16 {
         ((self.wave_ps[self.output_s() as usize] as u16) << 4) & self.output_p()
     }
 
+    #[inline]
     fn output_pst(&self) -> u16 {
         ((self.wave_pst[self.output_s() as usize] as u16) << 4) & self.output_p()
     }
 
+    #[inline]
     fn output_pt(&self) -> u16 {
         ((self.wave_pt[(self.output_t() >> 1) as usize] as u16) << 4) & self.output_p()
     }
 
+    #[inline]
     fn output_st(&self) -> u16 {
         (self.wave_st[self.output_s() as usize] as u16) << 4
     }

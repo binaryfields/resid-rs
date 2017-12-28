@@ -81,6 +81,7 @@ impl ExternalFilter {
         self.enabled = enabled;
     }
 
+    #[inline]
     pub fn clock(&mut self, vi: i32) {
         // delta_t is converted to seconds given a 1MHz clock by dividing
         // with 1 000 000.
@@ -101,6 +102,7 @@ impl ExternalFilter {
         }
     }
 
+    #[inline]
     pub fn clock_delta(&mut self, mut delta: u32, vi: i32) {
         if self.enabled {
             // Maximum delta cycles for the external filter to work satisfactorily
@@ -130,6 +132,7 @@ impl ExternalFilter {
         }
     }
 
+    #[inline]
     pub fn output(&self) -> i32 {
         self.vo
     }

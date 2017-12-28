@@ -240,6 +240,7 @@ impl Filter {
         self.set_q();
     }
 
+    #[inline]
     pub fn clock(&mut self, mut voice1: i32, mut voice2: i32, mut voice3: i32, mut ext_in: i32) {
         // Scale each voice down from 20 to 13 bits.
         voice1 >>= 7;
@@ -352,6 +353,7 @@ impl Filter {
         self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
     }
 
+    #[inline]
     pub fn clock_delta(
         &mut self,
         mut delta: u32,
@@ -484,6 +486,7 @@ impl Filter {
         }
     }
 
+    #[inline]
     pub fn output(&self) -> i32 {
         // This is handy for testing.
         if !self.enabled {

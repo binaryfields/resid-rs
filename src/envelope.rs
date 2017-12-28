@@ -200,6 +200,7 @@ impl EnvelopeGenerator {
         }
     }
 
+    #[inline]
     pub fn clock(&mut self) {
         // Check for ADSR delay bug.
         // If the rate counter comparison value is set below the current value of the
@@ -271,6 +272,7 @@ impl EnvelopeGenerator {
         }
     }
 
+    #[inline]
     pub fn clock_delta(&mut self, mut delta: u32) {
         // NB! This requires two's complement integer.
         let mut rate_step = self.rate_counter_period as i32 - self.rate_counter as i32;
@@ -347,6 +349,7 @@ impl EnvelopeGenerator {
         }
     }
 
+    #[inline]
     pub fn output(&self) -> u8 {
         self.envelope_counter
     }

@@ -98,6 +98,7 @@ impl Sampler {
         self.sample_prev = 0;
     }
 
+    #[inline]
     pub fn sample(
         &mut self,
         sid: &mut Sid,
@@ -125,6 +126,7 @@ impl Sampler {
     // ----------------------------------------------------------------------------
     // SID clocking with audio sampling - delta clocking picking nearest sample.
     // ----------------------------------------------------------------------------
+    #[inline]
     fn clock_fast(
         &mut self,
         sid: &mut Sid,
@@ -155,6 +157,7 @@ impl Sampler {
         }
     }
 
+    #[inline]
     fn clock_interpolate(
         &mut self,
         sid: &mut Sid,
@@ -230,6 +233,7 @@ impl Sampler {
     // NB! the result of right shifting negative numbers is really
     // implementation dependent in the C++ standard.
     // ----------------------------------------------------------------------------
+    #[inline]
     fn clock_resample_interpolate(
         &mut self,
         sid: &mut Sid,
@@ -262,7 +266,7 @@ impl Sampler {
             let fir_offset_rmd = (self.sample_offset * self.fir_res) & FIXP_MASK;
             let fir_start_1 = (fir_offset_1 * self.fir_n) as usize;
             let fir_end_1 = fir_start_1 + self.fir_n as usize;
-            let sample_start_1 = self.sample_index - self.fir_n as usize + RINGSIZE;
+            let sample_start_1 = (self.sample_index as i32 - self.fir_n + RINGSIZE as i32) as usize;
             let sample_end_1 = sample_start_1 + self.fir_n as usize;
 
             // Convolution with filter impulse response.
@@ -323,6 +327,7 @@ impl Sampler {
     // ----------------------------------------------------------------------------
     // SID clocking with audio sampling - cycle based with audio resampling.
     // ----------------------------------------------------------------------------
+    #[inline]
     fn clock_resample_fast(
         &mut self,
         sid: &mut Sid,
@@ -354,7 +359,7 @@ impl Sampler {
             let fir_offset = (self.sample_offset * self.fir_res) >> FIXP_SHIFT;
             let fir_start = (fir_offset * self.fir_n) as usize;
             let fir_end = fir_start + self.fir_n as usize;
-            let sample_start = self.sample_index - self.fir_n as usize + RINGSIZE;
+            let sample_start = (self.sample_index as i32 - self.fir_n + RINGSIZE as i32) as usize;
             let sample_end = sample_start + self.fir_n as usize;
 
             // Convolution with filter impulse response.
@@ -390,6 +395,8 @@ impl Sampler {
         }
     }
 
+    #[allow(dead_code)]
+    #[inline]
     fn compute_convolution_fir_index(&self, sample: &[i16], fir: &[i16]) -> i32 {
         let len = cmp::min(sample.len(), fir.len());
         let fs = &fir[..len];
@@ -403,7 +410,7 @@ impl Sampler {
         v
     }
 
-    #[allow(dead_code)]
+    #[inline]
     fn compute_convolution_fir_unroll(&self, sample: &[i16], fir: &[i16]) -> i32 {
         let len = cmp::min(sample.len(), fir.len());
         let mut fs = &fir[..len];
