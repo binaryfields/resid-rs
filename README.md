@@ -15,7 +15,7 @@ so it is packaged and shipped as a standalone crate.
 The port has reached compliance with the original resid implementation as of version 0.3.
 Output has been tested and verified to match the original implementation.
 Full sampler support has been added to v0.4 which reached feature parity
-with resid.
+with resid. Performance gap largely due to resampling has been closed in v0.5.
 
 ### Components
 
@@ -32,5 +32,6 @@ with resid.
 ## Credits
 
 - Thanks to Dag Lem for his reSID implementation
+- Thanks to Daniel Collin for motivating me to put this out and helping out with code optimization
 - Commodore folks for building an iconic 8-bit machine
 - Rust developers for providing an incredible language to develop in

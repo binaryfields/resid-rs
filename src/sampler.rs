@@ -270,7 +270,7 @@ impl Sampler {
             let sample_end_1 = sample_start_1 + self.fir_n as usize;
 
             // Convolution with filter impulse response.
-            let v1 = self.compute_convolution_fir_index(
+            let v1 = self.compute_convolution_fir_zip(
                 &self.sample_buffer[sample_start_1..sample_end_1],
                 &self.fir[fir_start_1..fir_end_1],
             );
@@ -287,7 +287,7 @@ impl Sampler {
             let fir_end_2 = fir_start_2 + self.fir_n as usize;
             let sample_end_2 = sample_start_2 + self.fir_n as usize;
 
-            let v2 = self.compute_convolution_fir_unroll(
+            let v2 = self.compute_convolution_fir_zip(
                 &self.sample_buffer[sample_start_2..sample_end_2],
                 &self.fir[fir_start_2..fir_end_2],
             );
@@ -363,7 +363,7 @@ impl Sampler {
             let sample_end = sample_start + self.fir_n as usize;
 
             // Convolution with filter impulse response.
-            let mut v = self.compute_convolution_fir_unroll(
+            let mut v = self.compute_convolution_fir_zip(
                 &self.sample_buffer[sample_start..sample_end],
                 &self.fir[fir_start..fir_end],
             );
@@ -410,6 +410,7 @@ impl Sampler {
         v
     }
 
+    #[allow(dead_code)]
     #[inline]
     fn compute_convolution_fir_unroll(&self, sample: &[i16], fir: &[i16]) -> i32 {
         let len = cmp::min(sample.len(), fir.len());
@@ -440,6 +441,17 @@ impl Sampler {
             v += ss[i] as i32 * fs[i] as i32;
         }
         v
+    }
+
+    #[inline]
+    fn compute_convolution_fir_zip(&self, sample: &[i16], fir: &[i16]) -> i32 {
+        if sample.len() < fir.len() {
+            sample.iter().zip(fir.iter())
+                .fold(0, |sum, (&s, &f)| sum + (s as i32 * f as i32))
+        } else {
+            fir.iter().zip(sample.iter())
+                .fold(0, |sum, (&f, &s)| sum + (f as i32 * s as i32))
+        }
     }
 
     #[inline]
