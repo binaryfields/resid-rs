@@ -1,6 +1,6 @@
 [package]
 name = "resid-rs"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 license = "GPL-2.0+"
 readme = "README.md"

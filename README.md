@@ -16,6 +16,7 @@ The port has reached compliance with the original resid implementation as of ver
 Output has been tested and verified to match the original implementation.
 Full sampler support has been added to v0.4 which reached feature parity
 with resid. Performance gap largely due to resampling has been closed in v0.5.
+SIMD optimization added in v0.6.
 
 ### Components
 

@@ -270,7 +270,7 @@ impl Sampler {
             let sample_end_1 = sample_start_1 + self.fir_n as usize;
 
             // Convolution with filter impulse response.
-            let v1 = self.compute_convolution_fir_zip(
+            let v1 = self.compute_convolution_fir(
                 &self.sample_buffer[sample_start_1..sample_end_1],
                 &self.fir[fir_start_1..fir_end_1],
             );
@@ -287,7 +287,7 @@ impl Sampler {
             let fir_end_2 = fir_start_2 + self.fir_n as usize;
             let sample_end_2 = sample_start_2 + self.fir_n as usize;
 
-            let v2 = self.compute_convolution_fir_zip(
+            let v2 = self.compute_convolution_fir(
                 &self.sample_buffer[sample_start_2..sample_end_2],
                 &self.fir[fir_start_2..fir_end_2],
             );
@@ -363,7 +363,7 @@ impl Sampler {
             let sample_end = sample_start + self.fir_n as usize;
 
             // Convolution with filter impulse response.
-            let mut v = self.compute_convolution_fir_zip(
+            let mut v = self.compute_convolution_fir(
                 &self.sample_buffer[sample_start..sample_end],
                 &self.fir[fir_start..fir_end],
             );
@@ -395,48 +395,53 @@ impl Sampler {
         }
     }
 
-    #[allow(dead_code)]
     #[inline]
-    fn compute_convolution_fir_index(&self, sample: &[i16], fir: &[i16]) -> i32 {
-        let len = cmp::min(sample.len(), fir.len());
-        let fs = &fir[..len];
-        let ss = &sample[..len];
-        let mut v = 0;
-        for i in 0..len {
-            let s = &ss[i];
-            let f = &fs[i];
-            v += *s as i32 * *f as i32;
+    fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
+            }
         }
-        v
+        self.compute_convolution_fir_fallback(sample, fir)
     }
 
-    #[allow(dead_code)]
-    #[inline]
-    fn compute_convolution_fir_unroll(&self, sample: &[i16], fir: &[i16]) -> i32 {
+    #[target_feature(enable = "avx2")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    unsafe fn compute_convolution_fir_avx2(&self, sample: &[i16], fir: &[i16]) -> i32 {
+        #[cfg(target_arch = "x86")]
+        use std::arch::x86::*;
+        #[cfg(target_arch = "x86_64")]
+        use std::arch::x86_64::*;
+
+        // Convolution with filter impulse response.
         let len = cmp::min(sample.len(), fir.len());
         let mut fs = &fir[..len];
         let mut ss = &sample[..len];
-
-        // Convolution with filter impulse response.
-        let (mut p0, mut p1, mut p2, mut p3, mut p4, mut p5, mut p6, mut p7) =
-            (0, 0, 0, 0, 0, 0, 0, 0);
-        while fs.len() >= 8 {
-            p0 += ss[0] as i32 * fs[0] as i32;
-            p1 += ss[1] as i32 * fs[1] as i32;
-            p2 += ss[2] as i32 * fs[2] as i32;
-            p3 += ss[3] as i32 * fs[3] as i32;
-            p4 += ss[4] as i32 * fs[4] as i32;
-            p5 += ss[5] as i32 * fs[5] as i32;
-            p6 += ss[6] as i32 * fs[6] as i32;
-            p7 += ss[7] as i32 * fs[7] as i32;
-            fs = &fs[8..];
-            ss = &ss[8..];
+        let mut va = [0i32; 8];
+        let mut v = _mm256_set1_epi32(0);
+        while fs.len() >= 64 {
+            let sv1 = _mm256_loadu_si256(ss.as_ptr() as *const _);
+            let sv2 = _mm256_loadu_si256((&ss[16..]).as_ptr() as *const _);
+            let sv3 = _mm256_loadu_si256((&ss[32..]).as_ptr() as *const _);
+            let sv4 = _mm256_loadu_si256((&ss[48..]).as_ptr() as *const _);
+            let fv1 = _mm256_loadu_si256(fs.as_ptr() as *const _);
+            let prod = _mm256_madd_epi16(sv1, fv1);
+            v = _mm256_add_epi32(v, prod);
+            let fv2 = _mm256_loadu_si256((&fs[16..]).as_ptr() as *const _);
+            let prod = _mm256_madd_epi16(sv2, fv2);
+            v = _mm256_add_epi32(v, prod);
+            let fv3 = _mm256_loadu_si256((&fs[32..]).as_ptr() as *const _);
+            let prod = _mm256_madd_epi16(sv3, fv3);
+            v = _mm256_add_epi32(v, prod);
+            let fv4 = _mm256_loadu_si256((&fs[48..]).as_ptr() as *const _);
+            let prod = _mm256_madd_epi16(sv4, fv4);
+            v = _mm256_add_epi32(v, prod);
+            fs = &fs[64..];
+            ss = &ss[64..];
         }
-        let mut v = 0;
-        v += p0 + p4;
-        v += p1 + p5;
-        v += p2 + p6;
-        v += p3 + p7;
+        _mm256_storeu_si256(va[..].as_mut_ptr() as *mut _, v);
+        let mut v = va[0] + va[1] + va[2] + va[3] + va[4] + va[5] + va[6] + va[7];
         for i in 0..fs.len() {
             v += ss[i] as i32 * fs[i] as i32;
         }
@@ -444,7 +449,7 @@ impl Sampler {
     }
 
     #[inline]
-    fn compute_convolution_fir_zip(&self, sample: &[i16], fir: &[i16]) -> i32 {
+    fn compute_convolution_fir_fallback(&self, sample: &[i16], fir: &[i16]) -> i32 {
         if sample.len() < fir.len() {
             sample.iter().zip(fir.iter())
                 .fold(0, |sum, (&s, &f)| sum + (s as i32 * f as i32))
