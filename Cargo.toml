@@ -16,3 +16,10 @@ name = "resid"
 
 [dependencies]
 bit_field = "0.9"
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "sampler_bench"
+harness = false

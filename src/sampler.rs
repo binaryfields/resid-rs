@@ -396,11 +396,14 @@ impl Sampler {
     }
 
     #[inline]
-    fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
+    pub fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             if is_x86_feature_detected!("avx2") {
                 return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
+            }
+            if is_x86_feature_detected!("sse4.2") {
+                return unsafe { self.compute_convolution_fir_sse(sample, fir) };
             }
         }
         self.compute_convolution_fir_fallback(sample, fir)
@@ -408,7 +411,7 @@ impl Sampler {
 
     #[target_feature(enable = "avx2")]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    unsafe fn compute_convolution_fir_avx2(&self, sample: &[i16], fir: &[i16]) -> i32 {
+    pub unsafe fn compute_convolution_fir_avx2(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(target_arch = "x86")]
         use std::arch::x86::*;
         #[cfg(target_arch = "x86_64")]
@@ -418,29 +421,35 @@ impl Sampler {
         let len = cmp::min(sample.len(), fir.len());
         let mut fs = &fir[..len];
         let mut ss = &sample[..len];
-        let mut va = [0i32; 8];
-        let mut v = _mm256_set1_epi32(0);
+        let mut v1 = _mm256_set1_epi32(0);
+        let mut v2 = _mm256_set1_epi32(0);
+        let mut v3 = _mm256_set1_epi32(0);
+        let mut v4 = _mm256_set1_epi32(0);
         while fs.len() >= 64 {
             let sv1 = _mm256_loadu_si256(ss.as_ptr() as *const _);
             let sv2 = _mm256_loadu_si256((&ss[16..]).as_ptr() as *const _);
             let sv3 = _mm256_loadu_si256((&ss[32..]).as_ptr() as *const _);
             let sv4 = _mm256_loadu_si256((&ss[48..]).as_ptr() as *const _);
             let fv1 = _mm256_loadu_si256(fs.as_ptr() as *const _);
-            let prod = _mm256_madd_epi16(sv1, fv1);
-            v = _mm256_add_epi32(v, prod);
             let fv2 = _mm256_loadu_si256((&fs[16..]).as_ptr() as *const _);
-            let prod = _mm256_madd_epi16(sv2, fv2);
-            v = _mm256_add_epi32(v, prod);
             let fv3 = _mm256_loadu_si256((&fs[32..]).as_ptr() as *const _);
-            let prod = _mm256_madd_epi16(sv3, fv3);
-            v = _mm256_add_epi32(v, prod);
             let fv4 = _mm256_loadu_si256((&fs[48..]).as_ptr() as *const _);
-            let prod = _mm256_madd_epi16(sv4, fv4);
-            v = _mm256_add_epi32(v, prod);
+            let prod1 = _mm256_madd_epi16(sv1, fv1);
+            let prod2 = _mm256_madd_epi16(sv2, fv2);
+            let prod3 = _mm256_madd_epi16(sv3, fv3);
+            let prod4 = _mm256_madd_epi16(sv4, fv4);
+            v1 = _mm256_add_epi32(v1, prod1);
+            v2 = _mm256_add_epi32(v2, prod2);
+            v3 = _mm256_add_epi32(v3, prod3);
+            v4 = _mm256_add_epi32(v4, prod4);
             fs = &fs[64..];
             ss = &ss[64..];
         }
-        _mm256_storeu_si256(va[..].as_mut_ptr() as *mut _, v);
+        v1 = _mm256_add_epi32(v1, v2);
+        v3 = _mm256_add_epi32(v3, v4);
+        v1 = _mm256_add_epi32(v1, v3);
+        let mut va = [0i32; 8];
+        _mm256_storeu_si256(va[..].as_mut_ptr() as *mut _, v1);
         let mut v = va[0] + va[1] + va[2] + va[3] + va[4] + va[5] + va[6] + va[7];
         for i in 0..fs.len() {
             v += ss[i] as i32 * fs[i] as i32;
@@ -448,8 +457,56 @@ impl Sampler {
         v
     }
 
+    #[target_feature(enable = "sse4.2")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    pub unsafe fn compute_convolution_fir_sse(&self, sample: &[i16], fir: &[i16]) -> i32 {
+        #[cfg(target_arch = "x86")]
+        use std::arch::x86::*;
+        #[cfg(target_arch = "x86_64")]
+        use std::arch::x86_64::*;
+
+        // Convolution with filter impulse response.
+        let len = cmp::min(sample.len(), fir.len());
+        let mut fs = &fir[..len];
+        let mut ss = &sample[..len];
+        let mut v1 = _mm_set1_epi32(0);
+        let mut v2 = _mm_set1_epi32(0);
+        let mut v3 = _mm_set1_epi32(0);
+        let mut v4 = _mm_set1_epi32(0);
+        while fs.len() >= 32 {
+            let sv1 = _mm_loadu_si128(ss.as_ptr() as *const _);
+            let sv2 = _mm_loadu_si128((&ss[8..]).as_ptr() as *const _);
+            let sv3 = _mm_loadu_si128((&ss[16..]).as_ptr() as *const _);
+            let sv4 = _mm_loadu_si128((&ss[24..]).as_ptr() as *const _);
+            let fv1 = _mm_loadu_si128(fs.as_ptr() as *const _);
+            let fv2 = _mm_loadu_si128((&fs[8..]).as_ptr() as *const _);
+            let fv3 = _mm_loadu_si128((&fs[16..]).as_ptr() as *const _);
+            let fv4 = _mm_loadu_si128((&fs[24..]).as_ptr() as *const _);
+            let prod1 = _mm_madd_epi16(sv1, fv1);
+            let prod2 = _mm_madd_epi16(sv2, fv2);
+            let prod3 = _mm_madd_epi16(sv3, fv3);
+            let prod4 = _mm_madd_epi16(sv4, fv4);
+            v1 = _mm_add_epi32(v1, prod1);
+            v2 = _mm_add_epi32(v2, prod2);
+            v3 = _mm_add_epi32(v3, prod3);
+            v4 = _mm_add_epi32(v4, prod4);
+            fs = &fs[32..];
+            ss = &ss[32..];
+        }
+        v1 = _mm_add_epi32(v1, v2);
+        v3 = _mm_add_epi32(v3, v4);
+        v1 = _mm_add_epi32(v1, v3);
+        let mut va = [0i32; 4];
+        _mm_storeu_si128(va[..].as_mut_ptr() as *mut _, v1);
+        let mut v = va[0] + va[1] + va[2] + va[3];
+        for i in 0..fs.len() {
+            v += ss[i] as i32 * fs[i] as i32;
+        }
+        v
+    }
+
     #[inline]
-    fn compute_convolution_fir_fallback(&self, sample: &[i16], fir: &[i16]) -> i32 {
+    pub fn compute_convolution_fir_fallback(&self, sample: &[i16], fir: &[i16]) -> i32 {
         if sample.len() < fir.len() {
             sample.iter().zip(fir.iter())
                 .fold(0, |sum, (&s, &f)| sum + (s as i32 * f as i32))
