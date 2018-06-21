@@ -52,6 +52,8 @@ pub struct Sampler {
     fir_n: i32,
     fir_res: i32,
     sampling_method: SamplingMethod,
+    use_sse42: bool,
+    use_avx2: bool,
     // Runtime State
     sample_buffer: [i16; RINGSIZE * 2],
     sample_index: usize,
@@ -61,17 +63,25 @@ pub struct Sampler {
 
 impl Sampler {
     pub fn new() -> Sampler {
-        Sampler {
+        let mut sampler = Sampler {
             cycles_per_sample: 0,
             fir: Vec::new(),
             fir_n: 0,
             fir_res: 0,
             sampling_method: SamplingMethod::Fast,
+            use_avx2: false,
+            use_sse42: false,
             sample_buffer: [0; RINGSIZE * 2],
             sample_index: 0,
             sample_offset: 0,
             sample_prev: 0,
+        };
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            sampler.use_avx2 = is_x86_feature_detected!("avx2");
+            sampler.use_sse42 = is_x86_feature_detected!("sse4.2");
         }
+        sampler
     }
 
     pub fn set_parameters(&mut self, method: SamplingMethod, clock_freq: u32, sample_freq: u32) {
@@ -399,10 +409,10 @@ impl Sampler {
     pub fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
-            if is_x86_feature_detected!("avx2") {
+            if self.use_avx2 {
                 return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
             }
-            if is_x86_feature_detected!("sse4.2") {
+            if self.use_sse42 {
                 return unsafe { self.compute_convolution_fir_sse(sample, fir) };
             }
         }
