@@ -1,5 +1,8 @@
 # resid-rs
 
+[![Build Status](https://travis-ci.org/digitalstreamio/resid-rs.svg?branch=master)](https://travis-ci.org/digitalstreamio/resid-rs)
+[![Crates.io](https://img.shields.io/crates/v/resid-rs.svg?maxAge=2592000)](https://crates.io/crates/resid-rs)
+
 ### Overview
 
 Port of reSID, a MOS6581 SID emulator engine, to Rust.
