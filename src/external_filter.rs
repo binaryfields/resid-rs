@@ -1,22 +1,7 @@
-/*
- * Copyright (c) 2017 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
- * Portions (c) 2004 Dag Lem <resid@nimrod.no>
- *
- * This file is part of resid-rs.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// This file is part of resid-rs.
+// Copyright (c) 2017-2018 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
+// Portions (c) 2004 Dag Lem <resid@nimrod.no>
+// Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
 use super::ChipModel;
 
@@ -59,7 +44,7 @@ pub struct ExternalFilter {
 }
 
 impl ExternalFilter {
-    pub fn new(chip_model: ChipModel) -> ExternalFilter {
+    pub fn new(chip_model: ChipModel) -> Self {
         let mixer_dc = match chip_model {
             ChipModel::Mos6581 => MIXER_DC_6581,
             ChipModel::Mos8580 => 0,
