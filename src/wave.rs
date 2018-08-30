@@ -17,15 +17,12 @@ const ACC_MSB_MASK: u32 = 0x00800000;
 const SHIFT_MASK: u32 = 0x007fffff;
 const OUTPUT_MASK: u16 = 0x0fff;
 
-// ----------------------------------------------------------------------------
-// A 24 bit accumulator is the basis for waveform generation. FREQ is added to
-// the lower 16 bits of the accumulator each cycle.
-// The accumulator is set to zero when TEST is set, and starts counting
-// when TEST is cleared.
-// The noise waveform is taken from intermediate bits of a 23 bit shift
-// register. This register is clocked by bit 19 of the accumulator.
-// ----------------------------------------------------------------------------
-
+/// A 24 bit accumulator is the basis for waveform generation. FREQ is added to
+/// the lower 16 bits of the accumulator each cycle.
+/// The accumulator is set to zero when TEST is set, and starts counting
+/// when TEST is cleared.
+/// The noise waveform is taken from intermediate bits of a 23 bit shift
+/// register. This register is clocked by bit 19 of the accumulator.
 pub struct WaveformGenerator {
     // Dependencies
     sync_source: Option<Rc<RefCell<WaveformGenerator>>>,
@@ -260,7 +257,7 @@ impl WaveformGenerator {
         }
     }
 
-    /* 12-bit waveform output. */
+    /// 12-bit waveform output
     #[inline]
     pub fn output(&self) -> u16 {
         match self.waveform {
@@ -300,13 +297,11 @@ impl WaveformGenerator {
         self.msb_rising = false;
     }
 
-    /*
-    Synchronize oscillators.
-    This must be done after all the oscillators have been clock()'ed since the
-    oscillators operate in parallel.
-    Note that the oscillators must be clocked exactly on the cycle when the
-    MSB is set high for hard sync to operate correctly. See SID::clock().
-    */
+    /// Synchronize oscillators.
+    /// This must be done after all the oscillators have been clock()'ed since the
+    /// oscillators operate in parallel.
+    /// Note that the oscillators must be clocked exactly on the cycle when the
+    /// MSB is set high for hard sync to operate correctly. See SID::clock().
     #[inline]
     pub fn synchronize(&mut self) {
         // A special case occurs when a sync source is synced itself on the same
@@ -335,25 +330,24 @@ impl WaveformGenerator {
 
     // -- Output Functions
 
-    // Noise:
-    // The noise output is taken from intermediate bits of a 23-bit shift register
-    // which is clocked by bit 19 of the accumulator.
-    // NB! The output is actually delayed 2 cycles after bit 19 is set high.
-    // This is not modeled.
-    //
-    // Operation: Calculate EOR result, shift register, set bit 0 = result.
-    //
-    //                        ----------------------->---------------------
-    //                        |                                            |
-    //                   ----EOR----                                       |
-    //                   |         |                                       |
-    //                   2 2 2 1 1 1 1 1 1 1 1 1 1                         |
-    // Register bits:    2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 <---
-    //                   |   |       |     |   |       |     |   |
-    // OSC3 bits  :      7   6       5     4   3       2     1   0
-    //
-    // Since waveform output is 12 bits the output is left-shifted 4 times.
-    //
+    /// Noise:
+    /// The noise output is taken from intermediate bits of a 23-bit shift register
+    /// which is clocked by bit 19 of the accumulator.
+    /// NB! The output is actually delayed 2 cycles after bit 19 is set high.
+    /// This is not modeled.
+    ///
+    /// Operation: Calculate EOR result, shift register, set bit 0 = result.
+    ///
+    ///                        ----------------------->---------------------
+    ///                        |                                            |
+    ///                   ----EOR----                                       |
+    ///                   |         |                                       |
+    ///                   2 2 2 1 1 1 1 1 1 1 1 1 1                         |
+    /// Register bits:    2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 <---
+    ///                   |   |       |     |   |       |     |   |
+    /// OSC3 bits  :      7   6       5     4   3       2     1   0
+    ///
+    /// Since waveform output is 12 bits the output is left-shifted 4 times.
     #[inline]
     fn output_n(&self) -> u16 {
         (((self.shift & 0x400000) >> 11) | ((self.shift & 0x100000) >> 10)
@@ -362,16 +356,15 @@ impl WaveformGenerator {
             | ((self.shift & 0x000010) << 1) | ((self.shift & 0x000004) << 2)) as u16
     }
 
-    // Pulse:
-    // The upper 12 bits of the accumulator are used.
-    // These bits are compared to the pulse width register by a 12 bit digital
-    // comparator; output is either all one or all zero bits.
-    // NB! The output is actually delayed one cycle after the compare.
-    // This is not modeled.
-    //
-    // The test bit, when set to one, holds the pulse waveform output at 0xfff
-    // regardless of the pulse width setting.
-    //
+    /// Pulse:
+    /// The upper 12 bits of the accumulator are used.
+    /// These bits are compared to the pulse width register by a 12 bit digital
+    /// comparator; output is either all one or all zero bits.
+    /// NB! The output is actually delayed one cycle after the compare.
+    /// This is not modeled.
+    ///
+    /// The test bit, when set to one, holds the pulse waveform output at 0xfff
+    /// regardless of the pulse width setting.
     #[inline]
     fn output_p(&self) -> u16 {
         if self.test || ((self.acc >> 12) as u16 >= self.pulse_width) {
@@ -381,21 +374,19 @@ impl WaveformGenerator {
         }
     }
 
-    // Sawtooth:
-    // The output is identical to the upper 12 bits of the accumulator.
-    //
+    /// Sawtooth:
+    /// The output is identical to the upper 12 bits of the accumulator.
     #[inline]
     fn output_s(&self) -> u16 {
         (self.acc >> 12) as u16
     }
 
-    // Triangle:
-    // The upper 12 bits of the accumulator are used.
-    // The MSB is used to create the falling edge of the triangle by inverting
-    // the lower 11 bits. The MSB is thrown away and the lower 11 bits are
-    // left-shifted (half the resolution, full amplitude).
-    // Ring modulation substitutes the MSB with MSB EOR sync_source MSB.
-    //
+    /// Triangle:
+    /// The upper 12 bits of the accumulator are used.
+    /// The MSB is used to create the falling edge of the triangle by inverting
+    /// the lower 11 bits. The MSB is thrown away and the lower 11 bits are
+    /// left-shifted (half the resolution, full amplitude).
+    /// Ring modulation substitutes the MSB with MSB EOR sync_source MSB.
     #[inline]
     fn output_t(&self) -> u16 {
         let acc = if self.ring {

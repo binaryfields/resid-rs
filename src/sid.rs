@@ -289,20 +289,18 @@ impl Sid {
         self.ext_in = 0;
     }
 
-    // ----------------------------------------------------------------------------
-    // SID clocking with audio sampling.
-    // Fixpoint arithmetics is used.
-    //
-    // The example below shows how to clock the SID a specified amount of cycles
-    // while producing audio output:
-    //
-    // while (delta_t) {
-    //   bufindex += sid.clock(delta_t, buf + bufindex, buflength - bufindex);
-    //   write(dsp, buf, bufindex*2);
-    //   bufindex = 0;
-    // }
-    //
-    // ----------------------------------------------------------------------------
+    /// SID clocking with audio sampling.
+    /// Fixpoint arithmetics is used.
+    ///
+    /// The example below shows how to clock the SID a specified amount of cycles
+    /// while producing audio output:
+    /// ```
+    /// while (delta_t) {
+    ///   bufindex += sid.clock(delta_t, buf + bufindex, buflength - bufindex);
+    ///   write(dsp, buf, bufindex*2);
+    ///   bufindex = 0;
+    /// }
+    /// ```
     pub fn sample(
         &mut self,
         delta: u32,

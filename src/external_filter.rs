@@ -5,32 +5,29 @@
 
 use super::ChipModel;
 
-// Maximum mixer DC output level; to be removed if the external
-// filter is turned off: ((wave DC + voice DC)*voices + mixer DC)*volume
-// See voice.cc and filter.cc for an explanation of the values.
+/// Maximum mixer DC output level; to be removed if the external
+/// filter is turned off: ((wave DC + voice DC)*voices + mixer DC)*volume
+/// See voice.cc and filter.cc for an explanation of the values.
 const MIXER_DC_6581: i32 = ((((0x800 - 0x380) + 0x800) * 0xff * 3 - 0xfff * 0xff / 18) >> 7) * 0x0f;
 
-// Low-pass:  R = 10kOhm, C = 1000pF; w0l = 1/RC = 1/(1e4*1e-9) = 100000
-// High-pass: R =  1kOhm, C =   10uF; w0h = 1/RC = 1/(1e3*1e-5) =    100
-// Multiply with 1.048576 to facilitate division by 1 000 000 by right-
-// shifting 20 times (2 ^ 20 = 1048576).
+/// Low-pass:  R = 10kOhm, C = 1000pF; w0l = 1/RC = 1/(1e4*1e-9) = 100000
+/// High-pass: R =  1kOhm, C =   10uF; w0h = 1/RC = 1/(1e3*1e-5) =    100
+/// Multiply with 1.048576 to facilitate division by 1 000 000 by right-
+/// shifting 20 times (2 ^ 20 = 1048576).
 const W0_LP: i32 = 104858;
 const W0_HP: i32 = 105;
 
-// ----------------------------------------------------------------------------
-// The audio output stage in a Commodore 64 consists of two STC networks,
-// a low-pass filter with 3-dB frequency 16kHz followed by a high-pass
-// filter with 3-dB frequency 16Hz (the latter provided an audio equipment
-// input impedance of 1kOhm).
-// The STC networks are connected with a BJT supposedly meant to act as
-// a unity gain buffer, which is not really how it works. A more elaborate
-// model would include the BJT, however DC circuit analysis yields BJT
-// base-emitter and emitter-base impedances sufficiently low to produce
-// additional low-pass and high-pass 3dB-frequencies in the order of hundreds
-// of kHz. This calls for a sampling frequency of several MHz, which is far
-// too high for practical use.
-// ----------------------------------------------------------------------------
-
+/// The audio output stage in a Commodore 64 consists of two STC networks,
+/// a low-pass filter with 3-dB frequency 16kHz followed by a high-pass
+/// filter with 3-dB frequency 16Hz (the latter provided an audio equipment
+/// input impedance of 1kOhm).
+/// The STC networks are connected with a BJT supposedly meant to act as
+/// a unity gain buffer, which is not really how it works. A more elaborate
+/// model would include the BJT, however DC circuit analysis yields BJT
+/// base-emitter and emitter-base impedances sufficiently low to produce
+/// additional low-pass and high-pass 3dB-frequencies in the order of hundreds
+/// of kHz. This calls for a sampling frequency of several MHz, which is far
+/// too high for practical use.
 pub struct ExternalFilter {
     // Configuration
     enabled: bool,

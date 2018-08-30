@@ -71,10 +71,9 @@ static RATE_COUNTER_PERIOD: [u16; 16] = [
     31251, // 8 s*1.0MHz/256 = 31250.00
 ];
 
-// From the sustain levels it follows that both the low and high 4 bits of the
-// envelope counter are compared to the 4-bit sustain value.
-// This has been verified by sampling ENV3.
-//
+/// From the sustain levels it follows that both the low and high 4 bits of the
+/// envelope counter are compared to the 4-bit sustain value.
+/// This has been verified by sampling ENV3.
 static SUSTAIN_LEVEL: [u8; 16] = [
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
 ];
@@ -86,16 +85,13 @@ pub enum State {
     Release,
 }
 
-// ----------------------------------------------------------------------------
-// A 15 bit counter is used to implement the envelope rates, in effect
-// dividing the clock to the envelope counter by the currently selected rate
-// period.
-// In addition, another counter is used to implement the exponential envelope
-// decay, in effect further dividing the clock to the envelope counter.
-// The period of this counter is set to 1, 2, 4, 8, 16, 30 at the envelope
-// counter values 255, 93, 54, 26, 14, 6, respectively.
-// ----------------------------------------------------------------------------
-
+/// A 15 bit counter is used to implement the envelope rates, in effect
+/// dividing the clock to the envelope counter by the currently selected rate
+/// period.
+/// In addition, another counter is used to implement the exponential envelope
+/// decay, in effect further dividing the clock to the envelope counter.
+/// The period of this counter is set to 1, 2, 4, 8, 16, 30 at the envelope
+/// counter values 255, 93, 54, 26, 14, 6, respectively.
 pub struct EnvelopeGenerator {
     // Configuration
     attack: u8,

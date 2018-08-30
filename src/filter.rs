@@ -10,37 +10,6 @@ use super::spline;
 
 const MIXER_DC: i32 = -0xfff * 0xff / 18 >> 7;
 
-// ----------------------------------------------------------------------------
-// The SID filter is modeled with a two-integrator-loop biquadratic filter,
-// which has been confirmed by Bob Yannes to be the actual circuit used in
-// the SID chip.
-//
-// Measurements show that excellent emulation of the SID filter is achieved,
-// except when high resonance is combined with high sustain levels.
-// In this case the SID op-amps are performing less than ideally and are
-// causing some peculiar behavior of the SID filter. This however seems to
-// have more effect on the overall amplitude than on the color of the sound.
-//
-// The theory for the filter circuit can be found in "Microelectric Circuits"
-// by Adel S. Sedra and Kenneth C. Smith.
-// The circuit is modeled based on the explanation found there except that
-// an additional inverter is used in the feedback from the bandpass output,
-// allowing the summer op-amp to operate in single-ended mode. This yields
-// inverted filter outputs with levels independent of Q, which corresponds with
-// the results obtained from a real SID.
-//
-// We have been able to model the summer and the two integrators of the circuit
-// to form components of an IIR filter.
-// Vhp is the output of the summer, Vbp is the output of the first integrator,
-// and Vlp is the output of the second integrator in the filter circuit.
-//
-// According to Bob Yannes, the active stages of the SID filter are not really
-// op-amps. Rather, simple NMOS inverters are used. By biasing an inverter
-// into its region of quasi-linear operation using a feedback resistor from
-// input to output, a MOS inverter can be made to act like an op-amp for
-// small signals centered around the switching threshold.
-// ----------------------------------------------------------------------------
-
 // Maximum cutoff frequency is specified as
 // FCmax = 2.6e-5/C = 2.6e-5/2200e-12 = 11818.
 //
@@ -122,6 +91,34 @@ static FO_POINTS_8580: [(i32, i32); 19] = [
     (2047, 12500), // 0xff 0x07 - repeated end point
 ];
 
+/// The SID filter is modeled with a two-integrator-loop biquadratic filter,
+/// which has been confirmed by Bob Yannes to be the actual circuit used in
+/// the SID chip.
+///
+/// Measurements show that excellent emulation of the SID filter is achieved,
+/// except when high resonance is combined with high sustain levels.
+/// In this case the SID op-amps are performing less than ideally and are
+/// causing some peculiar behavior of the SID filter. This however seems to
+/// have more effect on the overall amplitude than on the color of the sound.
+///
+/// The theory for the filter circuit can be found in "Microelectric Circuits"
+/// by Adel S. Sedra and Kenneth C. Smith.
+/// The circuit is modeled based on the explanation found there except that
+/// an additional inverter is used in the feedback from the bandpass output,
+/// allowing the summer op-amp to operate in single-ended mode. This yields
+/// inverted filter outputs with levels independent of Q, which corresponds with
+/// the results obtained from a real SID.
+///
+/// We have been able to model the summer and the two integrators of the circuit
+/// to form components of an IIR filter.
+/// Vhp is the output of the summer, Vbp is the output of the first integrator,
+/// and Vlp is the output of the second integrator in the filter circuit.
+///
+/// According to Bob Yannes, the active stages of the SID filter are not really
+/// op-amps. Rather, simple NMOS inverters are used. By biasing an inverter
+/// into its region of quasi-linear operation using a feedback resistor from
+/// input to output, a MOS inverter can be made to act like an op-amp for
+/// small signals centered around the switching threshold.
 pub struct Filter {
     // Configuration
     enabled: bool,
