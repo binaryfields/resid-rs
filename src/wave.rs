@@ -337,7 +337,7 @@ impl WaveformGenerator {
     /// This is not modeled.
     ///
     /// Operation: Calculate EOR result, shift register, set bit 0 = result.
-    ///
+    ///``` ignore,
     ///                        ----------------------->---------------------
     ///                        |                                            |
     ///                   ----EOR----                                       |
@@ -346,7 +346,7 @@ impl WaveformGenerator {
     /// Register bits:    2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 <---
     ///                   |   |       |     |   |       |     |   |
     /// OSC3 bits  :      7   6       5     4   3       2     1   0
-    ///
+    /// ```
     /// Since waveform output is 12 bits the output is left-shifted 4 times.
     #[inline]
     fn output_n(&self) -> u16 {

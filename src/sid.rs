@@ -294,12 +294,12 @@ impl Sid {
     ///
     /// The example below shows how to clock the SID a specified amount of cycles
     /// while producing audio output:
-    /// ```
-    /// while (delta_t) {
-    ///   bufindex += sid.clock(delta_t, buf + bufindex, buflength - bufindex);
-    ///   write(dsp, buf, bufindex*2);
-    ///   bufindex = 0;
-    /// }
+    /// ``` ignore,
+    ///     while (delta_t) {
+    ///       bufindex += sid.clock(delta_t, buf + bufindex, buflength - bufindex);
+    ///       write(dsp, buf, bufindex*2);
+    ///       bufindex = 0;
+    ///     }
     /// ```
     pub fn sample(
         &mut self,
