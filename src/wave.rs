@@ -8,8 +8,8 @@ use std::rc::Rc;
 
 use bit_field::BitField;
 
-use super::ChipModel;
 use super::data;
+use super::ChipModel;
 
 const ACC_MASK: u32 = 0x00ffffff;
 const ACC_BIT19_MASK: u32 = 0x00080000;
@@ -350,10 +350,14 @@ impl WaveformGenerator {
     /// Since waveform output is 12 bits the output is left-shifted 4 times.
     #[inline]
     fn output_n(&self) -> u16 {
-        (((self.shift & 0x400000) >> 11) | ((self.shift & 0x100000) >> 10)
-            | ((self.shift & 0x010000) >> 7) | ((self.shift & 0x002000) >> 5)
-            | ((self.shift & 0x000800) >> 4) | ((self.shift & 0x000080) >> 1)
-            | ((self.shift & 0x000010) << 1) | ((self.shift & 0x000004) << 2)) as u16
+        (((self.shift & 0x400000) >> 11)
+            | ((self.shift & 0x100000) >> 10)
+            | ((self.shift & 0x010000) >> 7)
+            | ((self.shift & 0x002000) >> 5)
+            | ((self.shift & 0x000800) >> 4)
+            | ((self.shift & 0x000080) >> 1)
+            | ((self.shift & 0x000010) << 1)
+            | ((self.shift & 0x000004) << 2)) as u16
     }
 
     /// Pulse:

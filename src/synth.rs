@@ -3,10 +3,10 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-use super::ChipModel;
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
 use super::voice::Voice;
+use super::ChipModel;
 
 const OUTPUT_RANGE: u32 = 1 << 16;
 const OUTPUT_HALF: i32 = (OUTPUT_RANGE >> 1) as i32;

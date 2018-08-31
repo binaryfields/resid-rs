@@ -5,8 +5,8 @@
 
 use std::f64;
 
-use super::ChipModel;
 use super::spline;
+use super::ChipModel;
 
 const MIXER_DC: i32 = -0xfff * 0xff / 18 >> 7;
 
@@ -514,7 +514,8 @@ impl Filter {
     }
 
     fn set_f0(&mut self) {
-        let points = self.f0_points
+        let points = self
+            .f0_points
             .into_iter()
             .map(|&pt| spline::Point {
                 x: pt.0 as f64,

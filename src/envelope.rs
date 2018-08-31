@@ -53,19 +53,19 @@ const RATE_COUNTER_MSB_MASK: u16 = 0x8000;
 // periods.
 //
 static RATE_COUNTER_PERIOD: [u16; 16] = [
-    9, // 2ms*1.0MHz/256 = 7.81
-    32, // 8ms*1.0MHz/256 = 31.25
-    63, // 16ms*1.0MHz/256 = 62.50
-    95, // 24ms*1.0MHz/256 = 93.75
-    149, // 38ms*1.0MHz/256 = 148.44
-    220, // 56ms*1.0MHz/256 = 218.75
-    267, // 68ms*1.0MHz/256 = 265.63
-    313, // 80ms*1.0MHz/256 = 312.50
-    392, // 100ms*1.0MHz/256 = 390.63
-    977, // 250ms*1.0MHz/256 = 976.56
-    1954, // 500ms*1.0MHz/256 = 1953.13
-    3126, // 800ms*1.0MHz/256 = 3125.00
-    3907, // 1 s*1.0MHz/256 =  3906.25
+    9,     // 2ms*1.0MHz/256 = 7.81
+    32,    // 8ms*1.0MHz/256 = 31.25
+    63,    // 16ms*1.0MHz/256 = 62.50
+    95,    // 24ms*1.0MHz/256 = 93.75
+    149,   // 38ms*1.0MHz/256 = 148.44
+    220,   // 56ms*1.0MHz/256 = 218.75
+    267,   // 68ms*1.0MHz/256 = 265.63
+    313,   // 80ms*1.0MHz/256 = 312.50
+    392,   // 100ms*1.0MHz/256 = 390.63
+    977,   // 250ms*1.0MHz/256 = 976.56
+    1954,  // 500ms*1.0MHz/256 = 1953.13
+    3126,  // 800ms*1.0MHz/256 = 3125.00
+    3907,  // 1 s*1.0MHz/256 =  3906.25
     11720, // 3 s*1.0MHz/256 = 11718.75
     19532, // 5 s*1.0MHz/256 = 19531.25
     31251, // 8 s*1.0MHz/256 = 31250.00
@@ -75,7 +75,7 @@ static RATE_COUNTER_PERIOD: [u16; 16] = [
 /// envelope counter are compared to the 4-bit sustain value.
 /// This has been verified by sampling ENV3.
 static SUSTAIN_LEVEL: [u8; 16] = [
-    0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+    0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
 ];
 
 #[derive(Clone, Copy, PartialEq)]

@@ -6,9 +6,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::ChipModel;
 use super::envelope::EnvelopeGenerator;
 use super::wave::WaveformGenerator;
+use super::ChipModel;
 
 /// The waveform output range is 0x000 to 0xfff, so the "zero"
 /// level should ideally have been 0x800. In the measured chip, the

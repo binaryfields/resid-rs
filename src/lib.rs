@@ -11,8 +11,8 @@ pub mod external_filter;
 pub mod filter;
 pub mod sampler;
 mod sid;
-pub mod synth;
 pub mod spline;
+pub mod synth;
 pub mod voice;
 pub mod wave;
 
@@ -22,5 +22,5 @@ pub enum ChipModel {
     Mos8580,
 }
 
-pub use self::sid::Sid;
 pub use self::sampler::SamplingMethod;
+pub use self::sid::Sid;

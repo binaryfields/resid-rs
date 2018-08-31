@@ -1,7 +1,7 @@
 extern crate resid;
 
-use resid::ChipModel;
 use resid::external_filter::ExternalFilter;
+use resid::ChipModel;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 static RESID_OUTPUT: [i32; 41] = [

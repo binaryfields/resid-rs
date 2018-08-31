@@ -98,25 +98,12 @@ impl Sampler {
     }
 
     #[inline]
-    pub fn clock(
-        &mut self,
-        delta: u32,
-        buffer: &mut [i16],
-        interleave: usize,
-    ) -> (usize, u32) {
+    pub fn clock(&mut self, delta: u32, buffer: &mut [i16], interleave: usize) -> (usize, u32) {
         match self.sampling_method {
-            SamplingMethod::Fast => {
-                self.clock_fast(delta, buffer, interleave)
-            },
-            SamplingMethod::Interpolate => {
-                self.clock_interpolate(delta, buffer, interleave)
-            }
-            SamplingMethod::Resample => {
-                self.clock_resample_interpolate(delta, buffer, interleave)
-            }
-            SamplingMethod::ResampleFast => {
-                self.clock_resample_fast(delta, buffer, interleave)
-            }
+            SamplingMethod::Fast => self.clock_fast(delta, buffer, interleave),
+            SamplingMethod::Interpolate => self.clock_interpolate(delta, buffer, interleave),
+            SamplingMethod::Resample => self.clock_resample_interpolate(delta, buffer, interleave),
+            SamplingMethod::ResampleFast => self.clock_resample_fast(delta, buffer, interleave),
         }
     }
 
@@ -491,10 +478,13 @@ impl Sampler {
     #[inline]
     pub fn compute_convolution_fir_fallback(&self, sample: &[i16], fir: &[i16]) -> i32 {
         if sample.len() < fir.len() {
-            sample.iter().zip(fir.iter())
+            sample
+                .iter()
+                .zip(fir.iter())
                 .fold(0, |sum, (&s, &f)| sum + (s as i32 * f as i32))
         } else {
-            fir.iter().zip(sample.iter())
+            fir.iter()
+                .zip(sample.iter())
                 .fold(0, |sum, (&f, &s)| sum + (f as i32 * s as i32))
         }
     }
@@ -595,7 +585,8 @@ impl Sampler {
                 };
                 let sincwt = if wt.abs() >= 1e-6 { wt.sin() / wt } else { 1.0 };
                 let val = (1i32 << FIR_SHIFT) as f64 * filter_scale * samples_per_cycle * wc / pi
-                    * sincwt * kaiser;
+                    * sincwt
+                    * kaiser;
                 self.fir[(fir_offset + j) as usize] = (val + 0.5) as i16;
             }
         }

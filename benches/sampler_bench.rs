@@ -3,16 +3,16 @@ extern crate criterion;
 extern crate resid;
 
 use criterion::Criterion;
-use resid::ChipModel;
 use resid::sampler::Sampler;
 use resid::synth::Synth;
+use resid::ChipModel;
 
 fn bench_compute_convolution_fir(c: &mut Criterion) {
     c.bench_function("convolution_fir", |b| {
         let sampler = Sampler::new(Synth::new(ChipModel::Mos6581));
         let samples = [2i16; 1024];
         let fir = [5i16; 1024];
-        b.iter(|| sampler.compute_convolution_fir(&samples[..], &fir[..]) )
+        b.iter(|| sampler.compute_convolution_fir(&samples[..], &fir[..]))
     });
     c.bench_function("convolution_fir_avx2", |b| {
         let sampler = Sampler::new(Synth::new(ChipModel::Mos6581));

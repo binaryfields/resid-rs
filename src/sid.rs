@@ -3,10 +3,10 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-use super::ChipModel;
 use super::envelope::State as EnvState;
 use super::sampler::{Sampler, SamplingMethod};
 use super::synth::Synth;
+use super::ChipModel;
 
 #[derive(Clone, Copy)]
 pub enum Reg {
@@ -141,7 +141,7 @@ impl Sid {
             }
         }
         // Clock synthesizer.
-        self.sampler.synth.clock(); 
+        self.sampler.synth.clock();
     }
 
     pub fn clock_delta(&mut self, delta: u32) {
@@ -198,13 +198,8 @@ impl Sid {
     ///     delta = next_delta;
     /// }
     /// ```
-    pub fn sample(
-        &mut self,
-        delta: u32,
-        buffer: &mut [i16],
-        interleave: usize,
-    ) -> (usize, u32) {
-       self.sampler.clock(delta, buffer, interleave)
+    pub fn sample(&mut self, delta: u32, buffer: &mut [i16], interleave: usize) -> (usize, u32) {
+        self.sampler.clock(delta, buffer, interleave)
     }
 
     // -- Device I/O
@@ -224,67 +219,115 @@ impl Sid {
         self.bus_value_ttl = 0x2000;
         match Reg::from(reg) {
             Reg::FREQLO1 => {
-                self.sampler.synth.voices[0].wave.borrow_mut().set_frequency_lo(value);
+                self.sampler.synth.voices[0]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_lo(value);
             }
             Reg::FREQHI1 => {
-                self.sampler.synth.voices[0].wave.borrow_mut().set_frequency_hi(value);
+                self.sampler.synth.voices[0]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_hi(value);
             }
             Reg::PWLO1 => {
-                self.sampler.synth.voices[0].wave.borrow_mut().set_pulse_width_lo(value);
+                self.sampler.synth.voices[0]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_lo(value);
             }
             Reg::PWHI1 => {
-                self.sampler.synth.voices[0].wave.borrow_mut().set_pulse_width_hi(value);
+                self.sampler.synth.voices[0]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_hi(value);
             }
             Reg::CR1 => {
                 self.sampler.synth.voices[0].set_control(value);
             }
             Reg::AD1 => {
-                self.sampler.synth.voices[0].envelope.set_attack_decay(value);
+                self.sampler.synth.voices[0]
+                    .envelope
+                    .set_attack_decay(value);
             }
             Reg::SR1 => {
-                self.sampler.synth.voices[0].envelope.set_sustain_release(value);
+                self.sampler.synth.voices[0]
+                    .envelope
+                    .set_sustain_release(value);
             }
             Reg::FREQLO2 => {
-                self.sampler.synth.voices[1].wave.borrow_mut().set_frequency_lo(value);
+                self.sampler.synth.voices[1]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_lo(value);
             }
             Reg::FREQHI2 => {
-                self.sampler.synth.voices[1].wave.borrow_mut().set_frequency_hi(value);
+                self.sampler.synth.voices[1]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_hi(value);
             }
             Reg::PWLO2 => {
-                self.sampler.synth.voices[1].wave.borrow_mut().set_pulse_width_lo(value);
+                self.sampler.synth.voices[1]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_lo(value);
             }
             Reg::PWHI2 => {
-                self.sampler.synth.voices[1].wave.borrow_mut().set_pulse_width_hi(value);
+                self.sampler.synth.voices[1]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_hi(value);
             }
             Reg::CR2 => {
                 self.sampler.synth.voices[1].set_control(value);
             }
             Reg::AD2 => {
-                self.sampler.synth.voices[1].envelope.set_attack_decay(value);
+                self.sampler.synth.voices[1]
+                    .envelope
+                    .set_attack_decay(value);
             }
             Reg::SR2 => {
-                self.sampler.synth.voices[1].envelope.set_sustain_release(value);
+                self.sampler.synth.voices[1]
+                    .envelope
+                    .set_sustain_release(value);
             }
             Reg::FREQLO3 => {
-                self.sampler.synth.voices[2].wave.borrow_mut().set_frequency_lo(value);
+                self.sampler.synth.voices[2]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_lo(value);
             }
             Reg::FREQHI3 => {
-                self.sampler.synth.voices[2].wave.borrow_mut().set_frequency_hi(value);
+                self.sampler.synth.voices[2]
+                    .wave
+                    .borrow_mut()
+                    .set_frequency_hi(value);
             }
             Reg::PWLO3 => {
-                self.sampler.synth.voices[2].wave.borrow_mut().set_pulse_width_lo(value);
+                self.sampler.synth.voices[2]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_lo(value);
             }
             Reg::PWHI3 => {
-                self.sampler.synth.voices[2].wave.borrow_mut().set_pulse_width_hi(value);
+                self.sampler.synth.voices[2]
+                    .wave
+                    .borrow_mut()
+                    .set_pulse_width_hi(value);
             }
             Reg::CR3 => {
                 self.sampler.synth.voices[2].set_control(value);
             }
             Reg::AD3 => {
-                self.sampler.synth.voices[2].envelope.set_attack_decay(value);
+                self.sampler.synth.voices[2]
+                    .envelope
+                    .set_attack_decay(value);
             }
             Reg::SR3 => {
-                self.sampler.synth.voices[2].envelope.set_sustain_release(value);
+                self.sampler.synth.voices[2]
+                    .envelope
+                    .set_sustain_release(value);
             }
             Reg::FCLO => {
                 self.sampler.synth.filter.set_fc_lo(value);
