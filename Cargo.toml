@@ -1,6 +1,6 @@
 [package]
 name = "resid-rs"
-version = "0.8.0-pre"
+version = "0.8.0"
 authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 description = "Port of reSID, a MOS6581 SID emulator engine, to Rust"
 license = "GPL-3.0+"

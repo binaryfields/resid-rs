@@ -102,21 +102,20 @@ impl Sampler {
         &mut self,
         delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
         match self.sampling_method {
             SamplingMethod::Fast => {
-                self.clock_fast(delta, buffer, n, interleave)
+                self.clock_fast(delta, buffer, interleave)
             },
             SamplingMethod::Interpolate => {
-                self.clock_interpolate(delta, buffer, n, interleave)
+                self.clock_interpolate(delta, buffer, interleave)
             }
             SamplingMethod::Resample => {
-                self.clock_resample_interpolate(delta, buffer, n, interleave)
+                self.clock_resample_interpolate(delta, buffer, interleave)
             }
             SamplingMethod::ResampleFast => {
-                self.clock_resample_fast(delta, buffer, n, interleave)
+                self.clock_resample_fast(delta, buffer, interleave)
             }
         }
     }
@@ -127,14 +126,13 @@ impl Sampler {
         &mut self,
         mut delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
         loop {
             let next_sample_offset = self.get_next_sample_offset();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta || index >= n {
+            if delta_sample > delta || index >= buffer.len() {
                 break;
             }
             self.synth.clock_delta(delta_sample);
@@ -143,7 +141,7 @@ impl Sampler {
             index += 1;
             self.update_sample_offset(next_sample_offset);
         }
-        if delta > 0 && index < n {
+        if delta > 0 && index < buffer.len() {
             self.synth.clock_delta(delta);
             self.sample_offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
@@ -157,14 +155,13 @@ impl Sampler {
         &mut self,
         mut delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
         loop {
             let next_sample_offset = self.get_next_sample_offset();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta || index >= n {
+            if delta_sample > delta || index >= buffer.len() {
                 break;
             }
             for _i in 0..(delta_sample - 1) {
@@ -180,7 +177,7 @@ impl Sampler {
             self.sample_prev = sample_now;
             self.update_sample_offset(next_sample_offset);
         }
-        if delta > 0 && index < n {
+        if delta > 0 && index < buffer.len() {
             for _i in 0..(delta - 1) {
                 self.synth.clock();
             }
@@ -230,7 +227,6 @@ impl Sampler {
         &mut self,
         mut delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
@@ -238,7 +234,7 @@ impl Sampler {
         loop {
             let next_sample_offset = self.get_next_sample_offset2();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta || index >= n {
+            if delta_sample > delta || index >= buffer.len() {
                 break;
             }
 
@@ -299,7 +295,7 @@ impl Sampler {
             buffer[index * interleave] = v as i16;
             index += 1;
         }
-        if delta > 0 && index < n {
+        if delta > 0 && index < buffer.len() {
             for _i in 0..delta {
                 self.synth.clock();
                 let output = self.synth.output();
@@ -321,7 +317,6 @@ impl Sampler {
         &mut self,
         mut delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
@@ -329,7 +324,7 @@ impl Sampler {
         loop {
             let next_sample_offset = self.get_next_sample_offset2();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta || index >= n {
+            if delta_sample > delta || index >= buffer.len() {
                 break;
             }
 
@@ -367,7 +362,7 @@ impl Sampler {
             buffer[index * interleave] = v as i16;
             index += 1;
         }
-        if delta > 0 && index < n {
+        if delta > 0 && index < buffer.len() {
             for _i in 0..delta {
                 self.synth.clock();
                 let output = self.synth.output();

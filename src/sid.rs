@@ -188,20 +188,23 @@ impl Sid {
     /// The example below shows how to clock the SID a specified amount of cycles
     /// while producing audio output:
     /// ``` ignore,
-    ///     while (delta_t) {
-    ///       bufindex += sid.clock(delta_t, buf + bufindex, buflength - bufindex);
-    ///       write(dsp, buf, bufindex*2);
-    ///       bufindex = 0;
+    /// let mut buffer = [0i16; 8192];
+    /// while delta > 0 {
+    ///     let (samples, next_delta) = self.resid.sample(delta, &mut buffer[..], 1);
+    ///     let mut output = self.sound_buffer.lock().unwrap();
+    ///     for i in 0..samples {
+    ///         output.write(buffer[i]);
     ///     }
+    ///     delta = next_delta;
+    /// }
     /// ```
     pub fn sample(
         &mut self,
         delta: u32,
         buffer: &mut [i16],
-        n: usize,
         interleave: usize,
     ) -> (usize, u32) {
-       self.sampler.clock(delta, buffer, n, interleave)
+       self.sampler.clock(delta, buffer, interleave)
     }
 
     // -- Device I/O
