@@ -11,6 +11,7 @@ pub mod external_filter;
 pub mod filter;
 pub mod sampler;
 mod sid;
+pub mod synth;
 pub mod spline;
 pub mod voice;
 pub mod wave;

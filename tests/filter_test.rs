@@ -7,9 +7,9 @@ const SAMPLE_FREQ: u32 = 44100;
 const SAMPLE_COUNT: usize = 128;
 const CYCLES_PER_SAMPLE: u32 = CPU_FREQ / SAMPLE_FREQ;
 
-fn dump(sid: &mut Sid, name: &str, samples: usize) -> Vec<i16> {
+fn dump(sid: &mut Sid, _name: &str, samples: usize) -> Vec<i16> {
     let mut buffer = vec![0; samples];
-    let (read, delta) = sid.sample(samples as u32 * CYCLES_PER_SAMPLE, &mut buffer, samples, 1);
+    let _ = sid.sample(samples as u32 * CYCLES_PER_SAMPLE, &mut buffer, samples, 1);
     buffer
 }
 

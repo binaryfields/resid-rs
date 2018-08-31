@@ -5,7 +5,7 @@
 
 use std::cmp;
 
-use super::Sid;
+use super::synth::Synth;
 
 // Resampling constants.
 // The error in interpolated lookup is bounded by 1.234/L^2,
@@ -31,6 +31,8 @@ pub enum SamplingMethod {
 }
 
 pub struct Sampler {
+    // Dependencies
+    pub synth: Synth,
     // Configuration
     cycles_per_sample: u32,
     fir: Vec<i16>,
@@ -47,8 +49,9 @@ pub struct Sampler {
 }
 
 impl Sampler {
-    pub fn new() -> Self {
+    pub fn new(synth: Synth) -> Self {
         let mut sampler = Sampler {
+            synth,
             cycles_per_sample: 0,
             fir: Vec::new(),
             fir_n: 0,
@@ -88,15 +91,15 @@ impl Sampler {
     }
 
     pub fn reset(&mut self) {
+        self.synth.reset();
         self.sample_index = 0;
         self.sample_offset = 0;
         self.sample_prev = 0;
     }
 
     #[inline]
-    pub fn sample(
+    pub fn clock(
         &mut self,
-        sid: &mut Sid,
         delta: u32,
         buffer: &mut [i16],
         n: usize,
@@ -104,16 +107,16 @@ impl Sampler {
     ) -> (usize, u32) {
         match self.sampling_method {
             SamplingMethod::Fast => {
-                self.clock_fast(sid, delta, buffer, n, interleave)
+                self.clock_fast(delta, buffer, n, interleave)
             },
             SamplingMethod::Interpolate => {
-                self.clock_interpolate(sid, delta, buffer, n, interleave)
+                self.clock_interpolate(delta, buffer, n, interleave)
             }
             SamplingMethod::Resample => {
-                self.clock_resample_interpolate(sid, delta, buffer, n, interleave)
+                self.clock_resample_interpolate(delta, buffer, n, interleave)
             }
             SamplingMethod::ResampleFast => {
-                self.clock_resample_fast(sid, delta, buffer, n, interleave)
+                self.clock_resample_fast(delta, buffer, n, interleave)
             }
         }
     }
@@ -122,7 +125,6 @@ impl Sampler {
     #[inline]
     fn clock_fast(
         &mut self,
-        sid: &mut Sid,
         mut delta: u32,
         buffer: &mut [i16],
         n: usize,
@@ -135,14 +137,14 @@ impl Sampler {
             if delta_sample > delta || index >= n {
                 break;
             }
-            sid.clock_delta(delta_sample);
+            self.synth.clock_delta(delta_sample);
             delta -= delta_sample;
-            buffer[(index * interleave) as usize] = sid.output();
+            buffer[(index * interleave) as usize] = self.synth.output();
             index += 1;
             self.update_sample_offset(next_sample_offset);
         }
         if delta > 0 && index < n {
-            sid.clock_delta(delta);
+            self.synth.clock_delta(delta);
             self.sample_offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
@@ -153,7 +155,6 @@ impl Sampler {
     #[inline]
     fn clock_interpolate(
         &mut self,
-        sid: &mut Sid,
         mut delta: u32,
         buffer: &mut [i16],
         n: usize,
@@ -167,11 +168,11 @@ impl Sampler {
                 break;
             }
             for _i in 0..(delta_sample - 1) {
-                self.sample_prev = sid.output();
-                sid.clock();
+                self.sample_prev = self.synth.output();
+                self.synth.clock();
             }
             delta -= delta_sample;
-            let sample_now = sid.output();
+            let sample_now = self.synth.output();
             buffer[index * interleave] = self.sample_prev
                 + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT)
                     as i16;
@@ -181,7 +182,7 @@ impl Sampler {
         }
         if delta > 0 && index < n {
             for _i in 0..(delta - 1) {
-                sid.clock();
+                self.synth.clock();
             }
             self.sample_offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
@@ -227,7 +228,6 @@ impl Sampler {
     #[inline]
     fn clock_resample_interpolate(
         &mut self,
-        sid: &mut Sid,
         mut delta: u32,
         buffer: &mut [i16],
         n: usize,
@@ -243,8 +243,8 @@ impl Sampler {
             }
 
             for _i in 0..delta_sample {
-                sid.clock();
-                let output = sid.output();
+                self.synth.clock();
+                let output = self.synth.output();
                 self.sample_buffer[self.sample_index] = output;
                 self.sample_buffer[self.sample_index + RINGSIZE] = output;
                 self.sample_index += 1;
@@ -301,8 +301,8 @@ impl Sampler {
         }
         if delta > 0 && index < n {
             for _i in 0..delta {
-                sid.clock();
-                let output = sid.output();
+                self.synth.clock();
+                let output = self.synth.output();
                 self.sample_buffer[self.sample_index] = output;
                 self.sample_buffer[self.sample_index + RINGSIZE] = output;
                 self.sample_index += 1;
@@ -319,7 +319,6 @@ impl Sampler {
     #[inline]
     fn clock_resample_fast(
         &mut self,
-        sid: &mut Sid,
         mut delta: u32,
         buffer: &mut [i16],
         n: usize,
@@ -335,8 +334,8 @@ impl Sampler {
             }
 
             for _i in 0..delta_sample {
-                sid.clock();
-                let output = sid.output();
+                self.synth.clock();
+                let output = self.synth.output();
                 self.sample_buffer[self.sample_index] = output;
                 self.sample_buffer[self.sample_index + RINGSIZE] = output;
                 self.sample_index += 1;
@@ -370,8 +369,8 @@ impl Sampler {
         }
         if delta > 0 && index < n {
             for _i in 0..delta {
-                sid.clock();
-                let output = sid.output();
+                self.synth.clock();
+                let output = self.synth.output();
                 self.sample_buffer[self.sample_index] = output;
                 self.sample_buffer[self.sample_index + RINGSIZE] = output;
                 self.sample_index += 1;
