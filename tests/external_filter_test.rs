@@ -1,5 +1,3 @@
-extern crate resid;
-
 use resid::external_filter::ExternalFilter;
 use resid::ChipModel;
 

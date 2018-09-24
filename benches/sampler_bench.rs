@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate criterion;
-extern crate resid;
 
 use criterion::Criterion;
 use resid::sampler::Sampler;

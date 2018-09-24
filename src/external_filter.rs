@@ -48,7 +48,7 @@ impl ExternalFilter {
         };
         let mut filter = ExternalFilter {
             enabled: true,
-            mixer_dc: mixer_dc,
+            mixer_dc,
             w0lp: W0_LP,
             w0hp: W0_HP,
             vlp: 0,

@@ -1,5 +1,3 @@
-extern crate resid;
-
 use resid::{ChipModel, Sid};
 
 const CPU_FREQ: u32 = 985248;

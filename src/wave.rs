@@ -399,8 +399,7 @@ impl WaveformGenerator {
             self.acc
         };
         let msb = acc & ACC_MSB_MASK;
-        let output =
-            if msb != 0 { !self.acc } else { self.acc };
+        let output = if msb != 0 { !self.acc } else { self.acc };
         (output >> 11) as u16 & OUTPUT_MASK
     }
 

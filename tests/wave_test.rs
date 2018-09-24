@@ -1,5 +1,3 @@
-extern crate resid;
-
 mod data;
 
 use resid::wave::WaveformGenerator;

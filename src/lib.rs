@@ -3,8 +3,6 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-extern crate bit_field;
-
 mod data;
 pub mod envelope;
 pub mod external_filter;
