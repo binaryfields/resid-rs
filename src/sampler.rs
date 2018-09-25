@@ -3,6 +3,9 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+#![cfg_attr(feature = "cargo-clippy", allow(cast_ptr_alignment))]
+
 use std::cmp;
 
 use super::synth::Synth;
@@ -269,7 +272,7 @@ impl Sampler {
             // Linear interpolation.
             // fir_offset_rmd is equal for all samples, it can thus be factorized out:
             // sum(v1 + rmd*(v2 - v1)) = sum(v1) + rmd*(sum(v2) - sum(v1))
-            let mut v = v1 + (fir_offset_rmd * (v2 - v1) >> FIXP_SHIFT);
+            let mut v = v1 + ((fir_offset_rmd * (v2 - v1)) >> FIXP_SHIFT);
             v >>= FIR_SHIFT;
 
             // Saturated arithmetics to guard against 16 bit sample overflow.
@@ -516,7 +519,7 @@ impl Sampler {
         mut pass_freq: f64,
         filter_scale: f64,
     ) {
-        let pi = 3.1415926535897932385;
+        let pi = std::f64::consts::PI;
         let samples_per_cycle = sample_freq / clock_freq;
         let cycles_per_sample = clock_freq / sample_freq;
 
@@ -574,7 +577,7 @@ impl Sampler {
             // Calculate FIR table. This is the sinc function, weighted by the
             // Kaiser window.
             let fir_n_div2 = self.fir_n / 2;
-            for j in -fir_n_div2..fir_n_div2 + 1 {
+            for j in -fir_n_div2..=fir_n_div2 {
                 let jx = j as f64 - j_offset;
                 let wt = wc * jx / cycles_per_sample;
                 let temp = jx / fir_n_div2 as f64;
@@ -604,7 +607,7 @@ impl Sampler {
             n += 1;
             u *= temp * temp;
             sum += u;
-            if !(u >= i0e * sum) {
+            if u < i0e * sum {
                 break;
             }
         }

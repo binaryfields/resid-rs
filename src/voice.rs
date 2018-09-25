@@ -3,6 +3,8 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -51,14 +53,14 @@ impl Voice {
             ChipModel::Mos6581 => Voice {
                 wave_zero: WAVE_ZERO,
                 voice_dc: VOICE_DC,
-                envelope: EnvelopeGenerator::new(),
+                envelope: EnvelopeGenerator::default(),
                 wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
             },
             ChipModel::Mos8580 => Voice {
                 // No DC offsets in the MOS8580.
                 wave_zero: 0x800,
                 voice_dc: 0,
-                envelope: EnvelopeGenerator::new(),
+                envelope: EnvelopeGenerator::default(),
                 wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
             },
         }

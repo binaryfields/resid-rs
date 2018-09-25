@@ -3,6 +3,8 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -11,10 +13,10 @@ use bit_field::BitField;
 use super::data;
 use super::ChipModel;
 
-const ACC_MASK: u32 = 0x00ffffff;
-const ACC_BIT19_MASK: u32 = 0x00080000;
-const ACC_MSB_MASK: u32 = 0x00800000;
-const SHIFT_MASK: u32 = 0x007fffff;
+const ACC_MASK: u32 = 0x00ff_ffff;
+const ACC_BIT19_MASK: u32 = 0x0008_0000;
+const ACC_MSB_MASK: u32 = 0x0080_0000;
+const SHIFT_MASK: u32 = 0x007f_ffff;
 const OUTPUT_MASK: u16 = 0x0fff;
 
 /// A 24 bit accumulator is the basis for waveform generation. FREQ is added to
@@ -166,7 +168,7 @@ impl WaveformGenerator {
             // NB! The shift register will not actually be set to this exact value if the
             // shift register bits have not had time to fade to zero.
             // This is not modeled.
-            self.shift = 0x7ffff8;
+            self.shift = 0x007f_fff8;
         }
         self.test = test;
     }
@@ -227,27 +229,25 @@ impl WaveformGenerator {
             self.msb_rising = (acc_prev & ACC_MSB_MASK) == 0 && (self.acc & ACC_MSB_MASK) != 0;
             // Shift noise register once for each time accumulator bit 19 is set high.
             // Bit 19 is set high each time 2^20 (0x100000) is added to the accumulator.
-            let mut shift_period = 0x100000;
+            let mut shift_period = 0x0010_0000;
             while delta_acc != 0 {
                 if delta_acc < shift_period {
                     shift_period = delta_acc;
                     // Determine whether bit 19 is set on the last period.
                     // NB! Requires two's complement integer.
-                    if shift_period <= 0x080000 {
+                    if shift_period <= 0x0008_0000 {
                         // Check for flip from 0 to 1.
                         if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
                             || (self.acc & ACC_BIT19_MASK) == 0
                         {
                             break;
                         }
-                    } else {
-                        // Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
-                        if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
-                            && (self.acc & ACC_BIT19_MASK) == 0
-                        {
-                            break;
-                        }
+                    // Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
+                    } else if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
+                            && (self.acc & ACC_BIT19_MASK) == 0 {
+                        break;
                     }
+
                 }
                 // Shift the noise/random register.
                 let bit0 = ((self.shift >> 22) ^ (self.shift >> 17)) & 0x01;
@@ -293,7 +293,7 @@ impl WaveformGenerator {
         self.sync = false;
         self.test = false;
         self.acc = 0;
-        self.shift = 0x7ffff8;
+        self.shift = 0x007f_fff8;
         self.msb_rising = false;
     }
 
@@ -350,14 +350,14 @@ impl WaveformGenerator {
     /// Since waveform output is 12 bits the output is left-shifted 4 times.
     #[inline]
     fn output_n(&self) -> u16 {
-        (((self.shift & 0x400000) >> 11)
-            | ((self.shift & 0x100000) >> 10)
-            | ((self.shift & 0x010000) >> 7)
-            | ((self.shift & 0x002000) >> 5)
-            | ((self.shift & 0x000800) >> 4)
-            | ((self.shift & 0x000080) >> 1)
-            | ((self.shift & 0x000010) << 1)
-            | ((self.shift & 0x000004) << 2)) as u16
+        (((self.shift & 0x0040_0000) >> 11)
+            | ((self.shift & 0x0010_0000) >> 10)
+            | ((self.shift & 0x0001_0000) >> 7)
+            | ((self.shift & 0x0000_2000) >> 5)
+            | ((self.shift & 0x0000_0800) >> 4)
+            | ((self.shift & 0x0000_0080) >> 1)
+            | ((self.shift & 0x0000_0010) << 1)
+            | ((self.shift & 0x0000_0004) << 2)) as u16
     }
 
     /// Pulse:

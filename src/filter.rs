@@ -3,12 +3,14 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+
 use std::f64;
 
 use super::spline;
 use super::ChipModel;
 
-const MIXER_DC: i32 = -0xfff * 0xff / 18 >> 7;
+const MIXER_DC: i32 = (-0xfff * 0xff / 18) >> 7;
 
 // Maximum cutoff frequency is specified as
 // FCmax = 2.6e-5/C = 2.6e-5/2200e-12 = 11818.
@@ -211,7 +213,7 @@ impl Filter {
     }
 
     pub fn set_mode_vol(&mut self, value: u8) {
-        self.voice3_off = if value & 0x80 != 0 { true } else { false };
+        self.voice3_off = value & 0x80 != 0;
         self.hp_bp_lp = (value >> 4) & 0x07;
         self.vol = value & 0x0f;
     }
@@ -328,11 +330,11 @@ impl Filter {
         // Vhp = Vbp/Q - Vlp - Vi;
         // dVbp = -w0*Vhp*dt;
         // dVlp = -w0*Vbp*dt;
-        let dvbp = self.w0_ceil_1 * self.vhp >> 20;
-        let dvlp = self.w0_ceil_1 * self.vbp >> 20;
+        let dvbp = (self.w0_ceil_1 * self.vhp) >> 20;
+        let dvlp = (self.w0_ceil_1 * self.vbp) >> 20;
         self.vbp -= dvbp;
         self.vlp -= dvlp;
-        self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
+        self.vhp = ((self.vbp * self.q_1024_div) >> 10) - self.vlp - vi;
     }
 
     #[inline]
@@ -458,11 +460,11 @@ impl Filter {
             // dVbp = -w0*Vhp*dt;
             // dVlp = -w0*Vbp*dt;
             let w0_delta_t = (self.w0_ceil_dt * delta_flt as i32) >> 6;
-            let dvbp = w0_delta_t * self.vhp >> 14;
-            let dvlp = w0_delta_t * self.vbp >> 14;
+            let dvbp = (w0_delta_t * self.vhp) >> 14;
+            let dvlp = (w0_delta_t * self.vbp) >> 14;
             self.vbp -= dvbp;
             self.vlp -= dvlp;
-            self.vhp = (self.vbp * self.q_1024_div >> 10) - self.vlp - vi;
+            self.vhp = ((self.vbp * self.q_1024_div) >> 10) - self.vlp - vi;
 
             delta -= delta_flt;
         }
@@ -524,9 +526,7 @@ impl Filter {
         let mut plotter = spline::PointPlotter::new(2048);
         spline::interpolate(&points, &mut plotter, 1.0);
         let output = plotter.output();
-        for i in 0..2048 {
-            self.f0[i] = output[i];
-        }
+        self.f0[..2048].clone_from_slice(&output[..2048]);
     }
 
     fn set_q(&mut self) {
@@ -542,10 +542,10 @@ impl Filter {
     fn set_w0(&mut self) {
         // Multiply with 1.048576 to facilitate division by 1 000 000 by right-
         // shifting 20 times (2 ^ 20 = 1048576).
-        self.w0 = (2.0 * f64::consts::PI * self.f0[self.fc as usize] as f64 * 1.048576) as i32;
+        self.w0 = (2.0 * f64::consts::PI * self.f0[self.fc as usize] as f64 * 1.048_576) as i32;
 
         // Limit f0 to 16kHz to keep 1 cycle filter stable.
-        let w0_max_1 = (2.0 * f64::consts::PI * 16000.0 * 1.048576) as i32;
+        let w0_max_1 = (2.0 * f64::consts::PI * 16000.0 * 1.048_576) as i32;
         self.w0_ceil_1 = if self.w0 <= w0_max_1 {
             self.w0
         } else {
@@ -553,7 +553,7 @@ impl Filter {
         };
 
         // Limit f0 to 4kHz to keep delta_t cycle filter stable.
-        let w0_max_dt = (2.0 * f64::consts::PI * 4000.0 * 1.048576) as i32;
+        let w0_max_dt = (2.0 * f64::consts::PI * 4000.0 * 1.048_576) as i32;
         self.w0_ceil_dt = if self.w0 <= w0_max_dt {
             self.w0
         } else {

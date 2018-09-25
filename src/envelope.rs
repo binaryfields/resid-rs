@@ -3,6 +3,8 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+
 use bit_field::BitField;
 
 const RATE_COUNTER_MASK: u16 = 0x7fff;
@@ -110,8 +112,8 @@ pub struct EnvelopeGenerator {
     pub rate_counter_period: u16,
 }
 
-impl EnvelopeGenerator {
-    pub fn new() -> Self {
+impl Default for EnvelopeGenerator {
+    fn default() -> Self {
         let mut envelope = EnvelopeGenerator {
             attack: 0,
             decay: 0,
@@ -129,6 +131,9 @@ impl EnvelopeGenerator {
         envelope.reset();
         envelope
     }
+}
+
+impl EnvelopeGenerator {
 
     pub fn get_attack_decay(&self) -> u8 {
         self.attack << 4 | self.decay
@@ -175,9 +180,8 @@ impl EnvelopeGenerator {
     pub fn set_sustain_release(&mut self, value: u8) {
         self.sustain = (value >> 4) & 0x0f;
         self.release = value & 0x0f;
-        match self.state {
-            State::Release => self.rate_counter_period = RATE_COUNTER_PERIOD[self.release as usize],
-            _ => {}
+        if self.state == State::Release {
+            self.rate_counter_period = RATE_COUNTER_PERIOD[self.release as usize];
         }
     }
 

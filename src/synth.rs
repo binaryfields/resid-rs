@@ -3,6 +3,8 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
 use super::voice::Voice;
@@ -80,10 +82,10 @@ impl Synth {
                 let freq = wave.borrow().get_frequency() as u32;
                 let acc = wave.borrow().get_acc();
                 // Clock on MSB off if MSB is on, clock on MSB on if MSB is off.
-                let delta_acc = if acc & 0x800000 != 0 {
-                    0x1000000 - acc
+                let delta_acc = if acc & 0x0080_0000 != 0 {
+                    0x0100_0000 - acc
                 } else {
-                    0x800000 - acc
+                    0x0080_0000 - acc
                 };
                 let mut delta_next = delta_acc / freq;
                 if delta_acc % freq != 0 {

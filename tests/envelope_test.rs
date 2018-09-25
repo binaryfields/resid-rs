@@ -4,7 +4,7 @@ static RESID_OUTPUT: &'static [u8] = include_bytes!("data/envelope_output.dat");
 
 #[test]
 fn clock() {
-    let mut envelope = EnvelopeGenerator::new();
+    let mut envelope = EnvelopeGenerator::default();
     let mut cycles = 0u32;
     // setup
     envelope.set_attack_decay(0x02 << 4 | 0x00);
@@ -109,11 +109,11 @@ fn clock() {
 }
 
 fn clock_delta() {
-    let mut envelope = EnvelopeGenerator::new();
+    let mut envelope = EnvelopeGenerator::default();
     envelope.set_attack_decay(0x02 << 4 | 0x00);
     envelope.set_sustain_release(0x02 << 4 | 0x01);
     envelope.set_control(0x01);
-    let mut envelope2 = EnvelopeGenerator::new();
+    let mut envelope2 = EnvelopeGenerator::default();
     envelope2.set_attack_decay(0x02 << 4 | 0x00);
     envelope2.set_sustain_release(0x02 << 4 | 0x01);
     envelope2.set_control(0x01);
@@ -132,7 +132,7 @@ fn clock_delta() {
 
 #[test]
 fn resid_output() {
-    let mut envelope = EnvelopeGenerator::new();
+    let mut envelope = EnvelopeGenerator::default();
     envelope.reset();
     // setup
     envelope.set_attack_decay(0x02 << 4 | 0x00);

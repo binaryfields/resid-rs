@@ -14,7 +14,7 @@ const MIXER_DC_6581: i32 = ((((0x800 - 0x380) + 0x800) * 0xff * 3 - 0xfff * 0xff
 /// High-pass: R =  1kOhm, C =   10uF; w0h = 1/RC = 1/(1e3*1e-5) =    100
 /// Multiply with 1.048576 to facilitate division by 1 000 000 by right-
 /// shifting 20 times (2 ^ 20 = 1048576).
-const W0_LP: i32 = 104858;
+const W0_LP: i32 = 104_858;
 const W0_HP: i32 = 105;
 
 /// The audio output stage in a Commodore 64 consists of two STC networks,

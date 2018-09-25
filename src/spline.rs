@@ -3,6 +3,9 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
+#![cfg_attr(feature = "cargo-clippy", allow(float_cmp ))]
+#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+
 //! Our objective is to construct a smooth interpolating single-valued function
 //! y = f(x).
 //!
@@ -155,11 +158,11 @@ fn interpolate_brute_force(
 ) {
     let (a, b, c, d) = cubic_coefficients(x1, y1, x2, y2, k1, k2);
     // Calculate each point.
-    let mut x = x1;
-    while x <= x2 {
-        let y = ((a * x + b) * x + c) * x + d;
-        plotter.plot(x, y);
-        x += res;
+    let mut xi = x1;
+    while xi <= x2 {
+        let yi = ((a * xi + b) * xi + c) * xi + d;
+        plotter.plot(xi, yi);
+        xi += res;
     }
 }
 
@@ -175,18 +178,18 @@ fn interpolate_forward_difference(
     res: f64,
 ) {
     let (a, b, c, d) = cubic_coefficients(x1, y1, x2, y2, k1, k2);
-    let mut y = ((a * x1 + b) * x1 + c) * x1 + d;
+    let mut yi = ((a * x1 + b) * x1 + c) * x1 + d;
     let mut dy = (3.0 * a * (x1 + res) + 2.0 * b) * x1 * res + ((a * res + b) * res + c) * res;
     let mut d2y = (6.0 * a * (x1 + res) + 2.0 * b) * res * res;
     let d3y = 6.0 * a * res * res * res;
     // Calculate each point.
-    let mut x = x1;
-    while x <= x2 {
-        plotter.plot(x, y);
-        y += dy;
+    let mut xi = x1;
+    while xi <= x2 {
+        plotter.plot(xi, yi);
+        yi += dy;
         dy += d2y;
         d2y += d3y;
-        x += res;
+        xi += res;
     }
 }
 
@@ -196,7 +199,7 @@ fn interpolate_forward_difference(
 /// desirable, the end points can simply be repeated to ensure interpolation.
 /// Note also that points of non-differentiability and discontinuity can be
 /// introduced by repeating points.
-pub fn interpolate(points: &Vec<Point>, plotter: &mut PointPlotter, res: f64) {
+pub fn interpolate(points: &[Point], plotter: &mut PointPlotter, res: f64) {
     let last_index = points.len() - 4;
     let mut i = 0;
     while i <= last_index {

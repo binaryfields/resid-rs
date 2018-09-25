@@ -78,8 +78,8 @@ impl Reg {
     }
 
     #[allow(dead_code)]
-    pub fn addr(&self) -> u8 {
-        *self as u8
+    pub fn addr(self) -> u8 {
+        self as u8
     }
 }
 
@@ -119,7 +119,7 @@ impl Sid {
             bus_value: 0,
             bus_value_ttl: 0,
         };
-        sid.set_sampling_parameters(SamplingMethod::Fast, 985248, 44100);
+        sid.set_sampling_parameters(SamplingMethod::Fast, 985_248, 44100);
         sid
     }
 
@@ -367,7 +367,7 @@ impl Sid {
             let j = i * 7;
             let wave = self.sampler.synth.voices[i].wave.borrow();
             let envelope = &self.sampler.synth.voices[i].envelope;
-            state.sid_register[j + 0] = wave.get_frequency_lo();
+            state.sid_register[j] = wave.get_frequency_lo();
             state.sid_register[j + 1] = wave.get_frequency_hi();
             state.sid_register[j + 2] = wave.get_pulse_width_lo();
             state.sid_register[j + 3] = wave.get_pulse_width_hi();
@@ -405,7 +405,7 @@ impl Sid {
         state
     }
 
-    pub fn write_state(&mut self, state: State) {
+    pub fn write_state(&mut self, state: &State) {
         for i in 0..0x19 {
             self.write(i, state.sid_register[i as usize]);
         }
@@ -425,7 +425,7 @@ impl Sid {
             envelope.envelope_counter = state.envelope_counter[i];
             envelope.exponential_counter = state.exponential_counter[i];
             envelope.exponential_counter_period = state.exponential_counter_period[i];
-            envelope.hold_zero = if state.hold_zero[i] != 0 { true } else { false };
+            envelope.hold_zero = state.hold_zero[i] != 0;
             envelope.rate_counter = state.rate_counter[i];
             envelope.rate_counter_period = state.rate_counter_period[i];
         }
