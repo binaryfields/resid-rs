@@ -3,8 +3,8 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
-#![cfg_attr(feature = "cargo-clippy", allow(cast_ptr_alignment))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
 
 use std::cmp;
 
