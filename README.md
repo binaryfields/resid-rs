@@ -13,15 +13,6 @@ This project originated from zinc64, a Commodore 64 emulator, around Jan 2017.
 It evolved to the point where it can be useful to others working on C64 sound/emulation
 so it is packaged and shipped as a standalone crate.
 
-### Status
-
-The port has reached compliance with the original resid implementation as of version 0.3.
-Output has been tested and verified to match the original implementation.
-Full sampler support has been added to v0.4 which reached feature parity
-with resid. Performance gap largely due to resampling has been closed in v0.5.
-SIMD optimization added in v0.6. Continuous integration and GPLv3 were brought to v0.7.
-v0.8 changes include documentation and api refinements/internal cleanup.
-
 ### Usage
 
 Once SID register read/writes are wired up to resid, all that is left to do
@@ -47,6 +38,16 @@ is to generate audio samples and push them to audio output buffer.
 | Spline            | Done        |
 | Wave              | Done        |
 | Sid               | Done        |
+
+### Changelog
+
+0.3 - compliance with the original resid
+0.4 - full sampler support 
+0.5 - closed performance gap largely due to resampling 
+0.6 - SIMD optimization 
+0.7 - continuous integration and GPLv3 
+0.8 - documentation and api refinements/internal cleanup
+0.9 - migration to Rust 2018
 
 ## Credits
 

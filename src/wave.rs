@@ -1,5 +1,5 @@
 // This file is part of resid-rs.
-// Copyright (c) 2017-2018 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
+// Copyright (c) 2017-2019 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
@@ -244,10 +244,10 @@ impl WaveformGenerator {
                         }
                     // Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
                     } else if ((self.acc as i32 - shift_period as i32) & ACC_BIT19_MASK as i32) != 0
-                            && (self.acc & ACC_BIT19_MASK) == 0 {
+                        && (self.acc & ACC_BIT19_MASK) == 0
+                    {
                         break;
                     }
-
                 }
                 // Shift the noise/random register.
                 let bit0 = ((self.shift >> 22) ^ (self.shift >> 17)) & 0x01;

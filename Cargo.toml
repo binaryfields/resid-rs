@@ -1,8 +1,8 @@
 [package]
 name = "resid-rs"
-version = "0.8.0"
-authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
+version = "0.9.0"
 edition = "2018"
+authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 description = "Port of reSID, a MOS6581 SID emulator engine, to Rust"
 license = "GPL-3.0+"
 repository = "https://github.com/digitalstreamio/resid-rs"

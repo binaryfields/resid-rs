@@ -44,7 +44,8 @@ fn set_f0(f0: &mut [i32; 2048]) {
         .map(|&pt| spline::Point {
             x: pt.0 as f64,
             y: pt.1 as f64,
-        }).collect::<Vec<spline::Point>>();
+        })
+        .collect::<Vec<spline::Point>>();
     let mut plotter = spline::PointPlotter::new(2048);
     spline::interpolate(&points, &mut plotter, 1.0);
     let output = plotter.output();

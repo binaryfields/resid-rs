@@ -1,5 +1,5 @@
 // This file is part of resid-rs.
-// Copyright (c) 2017-2018 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
+// Copyright (c) 2017-2019 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
@@ -20,7 +20,7 @@ use super::synth::Synth;
 const FIR_RES_FAST: i32 = 51473;
 const FIR_RES_INTERPOLATE: i32 = 285;
 const FIR_SHIFT: i32 = 15;
-const RINGSIZE: usize = 16384;
+const RING_SIZE: usize = 16384;
 
 const FIXP_SHIFT: i32 = 16;
 const FIXP_MASK: i32 = 0xffff;
@@ -45,10 +45,10 @@ pub struct Sampler {
     use_sse42: bool,
     use_avx2: bool,
     // Runtime State
-    sample_buffer: [i16; RINGSIZE * 2],
-    sample_index: usize,
-    sample_offset: i32,
-    sample_prev: i16,
+    buffer: [i16; RING_SIZE * 2],
+    index: usize,
+    offset: i32,
+    prev_sample: i16,
 }
 
 impl Sampler {
@@ -62,10 +62,10 @@ impl Sampler {
             sampling_method: SamplingMethod::Fast,
             use_avx2: false,
             use_sse42: false,
-            sample_buffer: [0; RINGSIZE * 2],
-            sample_index: 0,
-            sample_offset: 0,
-            sample_prev: 0,
+            buffer: [0; RING_SIZE * 2],
+            index: 0,
+            offset: 0,
+            prev_sample: 0,
         };
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
@@ -85,19 +85,19 @@ impl Sampler {
             self.init_fir(clock_freq as f64, sample_freq as f64, -1.0, 0.97);
         }
         // Clear state
-        for j in 0..RINGSIZE * 2 {
-            self.sample_buffer[j] = 0;
+        for j in 0..RING_SIZE * 2 {
+            self.buffer[j] = 0;
         }
-        self.sample_index = 0;
-        self.sample_offset = 0;
-        self.sample_prev = 0;
+        self.index = 0;
+        self.offset = 0;
+        self.prev_sample = 0;
     }
 
     pub fn reset(&mut self) {
         self.synth.reset();
-        self.sample_index = 0;
-        self.sample_offset = 0;
-        self.sample_prev = 0;
+        self.index = 0;
+        self.offset = 0;
+        self.prev_sample = 0;
     }
 
     #[inline]
@@ -133,7 +133,7 @@ impl Sampler {
         }
         if delta > 0 && index < buffer.len() {
             self.synth.clock_delta(delta);
-            self.sample_offset -= (delta as i32) << FIXP_SHIFT;
+            self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
             (index, delta)
@@ -155,23 +155,23 @@ impl Sampler {
                 break;
             }
             for _i in 0..(delta_sample - 1) {
-                self.sample_prev = self.synth.output();
+                self.prev_sample = self.synth.output();
                 self.synth.clock();
             }
             delta -= delta_sample;
             let sample_now = self.synth.output();
-            buffer[index * interleave] = self.sample_prev
-                + ((self.sample_offset * (sample_now - self.sample_prev) as i32) >> FIXP_SHIFT)
+            buffer[index * interleave] = self.prev_sample
+                + ((self.offset * (sample_now - self.prev_sample) as i32) >> FIXP_SHIFT)
                     as i16;
             index += 1;
-            self.sample_prev = sample_now;
+            self.prev_sample = sample_now;
             self.update_sample_offset(next_sample_offset);
         }
         if delta > 0 && index < buffer.len() {
             for _i in 0..(delta - 1) {
                 self.synth.clock();
             }
-            self.sample_offset -= (delta as i32) << FIXP_SHIFT;
+            self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
             (index, delta)
@@ -231,24 +231,24 @@ impl Sampler {
             for _i in 0..delta_sample {
                 self.synth.clock();
                 let output = self.synth.output();
-                self.sample_buffer[self.sample_index] = output;
-                self.sample_buffer[self.sample_index + RINGSIZE] = output;
-                self.sample_index += 1;
-                self.sample_index &= 0x3fff;
+                self.buffer[self.index] = output;
+                self.buffer[self.index + RING_SIZE] = output;
+                self.index += 1;
+                self.index &= 0x3fff;
             }
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
-            let fir_offset_1 = (self.sample_offset * self.fir_res) >> FIXP_SHIFT;
-            let fir_offset_rmd = (self.sample_offset * self.fir_res) & FIXP_MASK;
+            let fir_offset_1 = (self.offset * self.fir_res) >> FIXP_SHIFT;
+            let fir_offset_rmd = (self.offset * self.fir_res) & FIXP_MASK;
             let fir_start_1 = (fir_offset_1 * self.fir_n) as usize;
             let fir_end_1 = fir_start_1 + self.fir_n as usize;
-            let sample_start_1 = (self.sample_index as i32 - self.fir_n + RINGSIZE as i32) as usize;
+            let sample_start_1 = (self.index as i32 - self.fir_n + RING_SIZE as i32) as usize;
             let sample_end_1 = sample_start_1 + self.fir_n as usize;
 
             // Convolution with filter impulse response.
             let v1 = self.compute_convolution_fir(
-                &self.sample_buffer[sample_start_1..sample_end_1],
+                &self.buffer[sample_start_1..sample_end_1],
                 &self.fir[fir_start_1..fir_end_1],
             );
 
@@ -265,7 +265,7 @@ impl Sampler {
             let sample_end_2 = sample_start_2 + self.fir_n as usize;
 
             let v2 = self.compute_convolution_fir(
-                &self.sample_buffer[sample_start_2..sample_end_2],
+                &self.buffer[sample_start_2..sample_end_2],
                 &self.fir[fir_start_2..fir_end_2],
             );
 
@@ -289,12 +289,12 @@ impl Sampler {
             for _i in 0..delta {
                 self.synth.clock();
                 let output = self.synth.output();
-                self.sample_buffer[self.sample_index] = output;
-                self.sample_buffer[self.sample_index + RINGSIZE] = output;
-                self.sample_index += 1;
-                self.sample_index &= 0x3fff;
+                self.buffer[self.index] = output;
+                self.buffer[self.index + RING_SIZE] = output;
+                self.index += 1;
+                self.index &= 0x3fff;
             }
-            self.sample_offset -= (delta as i32) << FIXP_SHIFT;
+            self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
             (index, delta)
@@ -321,23 +321,23 @@ impl Sampler {
             for _i in 0..delta_sample {
                 self.synth.clock();
                 let output = self.synth.output();
-                self.sample_buffer[self.sample_index] = output;
-                self.sample_buffer[self.sample_index + RINGSIZE] = output;
-                self.sample_index += 1;
-                self.sample_index &= 0x3fff;
+                self.buffer[self.index] = output;
+                self.buffer[self.index + RING_SIZE] = output;
+                self.index += 1;
+                self.index &= 0x3fff;
             }
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
-            let fir_offset = (self.sample_offset * self.fir_res) >> FIXP_SHIFT;
+            let fir_offset = (self.offset * self.fir_res) >> FIXP_SHIFT;
             let fir_start = (fir_offset * self.fir_n) as usize;
             let fir_end = fir_start + self.fir_n as usize;
-            let sample_start = (self.sample_index as i32 - self.fir_n + RINGSIZE as i32) as usize;
+            let sample_start = (self.index as i32 - self.fir_n + RING_SIZE as i32) as usize;
             let sample_end = sample_start + self.fir_n as usize;
 
             // Convolution with filter impulse response.
             let mut v = self.compute_convolution_fir(
-                &self.sample_buffer[sample_start..sample_end],
+                &self.buffer[sample_start..sample_end],
                 &self.fir[fir_start..fir_end],
             );
             v >>= FIR_SHIFT;
@@ -356,12 +356,12 @@ impl Sampler {
             for _i in 0..delta {
                 self.synth.clock();
                 let output = self.synth.output();
-                self.sample_buffer[self.sample_index] = output;
-                self.sample_buffer[self.sample_index + RINGSIZE] = output;
-                self.sample_index += 1;
-                self.sample_index &= 0x3fff;
+                self.buffer[self.index] = output;
+                self.buffer[self.index + RING_SIZE] = output;
+                self.index += 1;
+                self.index &= 0x3fff;
             }
-            self.sample_offset -= (delta as i32) << FIXP_SHIFT;
+            self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
             (index, delta)
@@ -494,22 +494,22 @@ impl Sampler {
 
     #[inline]
     fn get_next_sample_offset(&self) -> i32 {
-        self.sample_offset + self.cycles_per_sample as i32 + (1 << (FIXP_SHIFT - 1))
+        self.offset + self.cycles_per_sample as i32 + (1 << (FIXP_SHIFT - 1))
     }
 
     #[inline]
     fn get_next_sample_offset2(&self) -> i32 {
-        self.sample_offset + self.cycles_per_sample as i32
+        self.offset + self.cycles_per_sample as i32
     }
 
     #[inline]
     fn update_sample_offset(&mut self, next_sample_offset: i32) {
-        self.sample_offset = (next_sample_offset & FIXP_MASK) - (1 << (FIXP_SHIFT - 1));
+        self.offset = (next_sample_offset & FIXP_MASK) - (1 << (FIXP_SHIFT - 1));
     }
 
     #[inline]
     fn update_sample_offset2(&mut self, next_sample_offset: i32) {
-        self.sample_offset = next_sample_offset & FIXP_MASK;
+        self.offset = next_sample_offset & FIXP_MASK;
     }
 
     fn init_fir(

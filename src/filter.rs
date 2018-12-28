@@ -1,5 +1,5 @@
 // This file is part of resid-rs.
-// Copyright (c) 2017-2018 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
+// Copyright (c) 2017-2019 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
@@ -522,7 +522,8 @@ impl Filter {
             .map(|&pt| spline::Point {
                 x: pt.0 as f64,
                 y: pt.1 as f64,
-            }).collect::<Vec<spline::Point>>();
+            })
+            .collect::<Vec<spline::Point>>();
         let mut plotter = spline::PointPlotter::new(2048);
         spline::interpolate(&points, &mut plotter, 1.0);
         let output = plotter.output();

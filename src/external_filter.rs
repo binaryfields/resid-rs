@@ -1,5 +1,5 @@
 // This file is part of resid-rs.
-// Copyright (c) 2017-2018 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
+// Copyright (c) 2017-2019 Sebastian Jastrzebski <sebby2k@gmail.com>. All rights reserved.
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
@@ -32,8 +32,8 @@ pub struct ExternalFilter {
     // Configuration
     enabled: bool,
     mixer_dc: i32,
-    w0lp: i32,
-    w0hp: i32,
+    w0_lp: i32,
+    w0_hp: i32,
     // Runtime State
     vlp: i32,
     vhp: i32,
@@ -49,8 +49,8 @@ impl ExternalFilter {
         let mut filter = ExternalFilter {
             enabled: true,
             mixer_dc,
-            w0lp: W0_LP,
-            w0hp: W0_HP,
+            w0_lp: W0_LP,
+            w0_hp: W0_HP,
             vlp: 0,
             vhp: 0,
             vo: 0,
@@ -72,8 +72,8 @@ impl ExternalFilter {
         // Vlp = Vlp + w0lp*(Vi - Vlp)*delta_t;
         // Vhp = Vhp + w0hp*(Vlp - Vhp)*delta_t;
         if self.enabled {
-            let dvlp = ((self.w0lp >> 8) * (vi - self.vlp)) >> 12;
-            let dvhp = (self.w0hp * (self.vlp - self.vhp)) >> 20;
+            let dvlp = ((self.w0_lp >> 8) * (vi - self.vlp)) >> 12;
+            let dvhp = (self.w0_hp * (self.vlp - self.vhp)) >> 20;
             self.vo = self.vlp - self.vhp;
             self.vlp += dvlp;
             self.vhp += dvhp;
@@ -100,8 +100,8 @@ impl ExternalFilter {
                 // Vo  = Vlp - Vhp;
                 // Vlp = Vlp + w0lp*(Vi - Vlp)*delta_t;
                 // Vhp = Vhp + w0hp*(Vlp - Vhp)*delta_t;
-                let dvlp = (((self.w0lp * delta_flt as i32) >> 8) * (vi - self.vlp)) >> 12;
-                let dvhp = (self.w0hp * delta_flt as i32 * (self.vlp - self.vhp)) >> 20;
+                let dvlp = (((self.w0_lp * delta_flt as i32) >> 8) * (vi - self.vlp)) >> 12;
+                let dvhp = (self.w0_hp * delta_flt as i32 * (self.vlp - self.vhp)) >> 20;
                 self.vo = self.vlp - self.vhp;
                 self.vlp += dvlp;
                 self.vhp += dvhp;

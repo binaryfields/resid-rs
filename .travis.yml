@@ -1,6 +1,6 @@
 language: rust
 sudo: false
 rust:
-  - beta
+  - stable
 script:
   - cargo test --all
