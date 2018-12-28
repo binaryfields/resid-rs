@@ -41,13 +41,13 @@ is to generate audio samples and push them to audio output buffer.
 
 ### Changelog
 
-0.3 - compliance with the original resid
-0.4 - full sampler support 
-0.5 - closed performance gap largely due to resampling 
-0.6 - SIMD optimization 
-0.7 - continuous integration and GPLv3 
-0.8 - documentation and api refinements/internal cleanup
-0.9 - migration to Rust 2018
+- 0.3 - compliance with the original resid
+- 0.4 - full sampler support 
+- 0.5 - closed performance gap largely due to resampling 
+- 0.6 - SIMD optimization 
+- 0.7 - continuous integration and GPLv3 
+- 0.8 - documentation and api refinements/internal cleanup
+- 0.9 - migration to Rust 2018
 
 ## Credits
 
