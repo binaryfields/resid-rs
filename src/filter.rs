@@ -5,7 +5,8 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-use std::f64;
+#[cfg(not(feature="std"))] use alloc::prelude::*;
+use core::f64;
 
 use super::spline;
 use super::ChipModel;

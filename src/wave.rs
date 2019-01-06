@@ -5,9 +5,10 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-use std::cell::RefCell;
-use std::rc::Rc;
+#[cfg(not(feature="std"))] use alloc::rc::Rc;
+#[cfg(feature="std")] use std::rc::Rc;
 
+use core::cell::RefCell;
 use bit_field::BitField;
 
 use super::data;

@@ -3,9 +3,6 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::float_cmp))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
-
 //! Our objective is to construct a smooth interpolating single-valued function
 //! y = f(x).
 //!
@@ -98,6 +95,12 @@
 //!
 //! ki = kj = dy/dx;
 //!
+
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::float_cmp))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
+
+#[cfg(not(feature="std"))] use alloc::prelude::*;
+#[cfg(not(feature="std"))] use alloc::vec;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Point {
