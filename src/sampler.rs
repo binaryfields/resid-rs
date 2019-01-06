@@ -17,6 +17,8 @@ use libm::F64Ext;
 
 use core::f64;
 
+#[cfg(not(feature = "std"))]
+use super::math;
 use super::synth::Synth;
 
 // Resampling constants.
@@ -377,14 +379,14 @@ impl Sampler {
     #[inline]
     pub fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
-        {
-            if self.use_avx2 {
-                return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
+            {
+                if self.use_avx2 {
+                    return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
+                }
+                if self.use_sse42 {
+                    return unsafe { self.compute_convolution_fir_sse(sample, fir) };
+                }
             }
-            if self.use_sse42 {
-                return unsafe { self.compute_convolution_fir_sse(sample, fir) };
-            }
-        }
         self.compute_convolution_fir_fallback(sample, fir)
     }
 
@@ -588,7 +590,7 @@ impl Sampler {
                 let wt = wc * jx / cycles_per_sample;
                 let temp = jx / fir_n_div2 as f64;
                 let kaiser = if temp.abs() <= 1.0 {
-                    self.i0(beta * (1.0 - temp * temp).sqrt()) / io_beta
+                    self.i0(beta * self.sqrt(1.0 - temp * temp)) / io_beta
                 } else {
                     0f64
                 };
@@ -618,5 +620,15 @@ impl Sampler {
             }
         }
         sum
+    }
+
+    #[cfg(feature = "std")]
+    fn sqrt(&self, value: f64) -> f64 {
+        value.sqrt()
+    }
+
+    #[cfg(not(feature = "std"))]
+    fn sqrt(&self, value: f64) -> f64 {
+        math::sqrt(value)
     }
 }

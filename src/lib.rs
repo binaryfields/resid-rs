@@ -15,6 +15,8 @@ mod data;
 pub mod envelope;
 pub mod external_filter;
 pub mod filter;
+#[cfg(not(feature = "std"))]
+mod math;
 pub mod sampler;
 mod sid;
 pub mod spline;
