@@ -1,6 +1,30 @@
 language: rust
 sudo: false
-rust:
-  - stable
+
+matrix:
+  include:
+    - rust: stable
+
+    - rust: nightly
+      script:
+        - cargo test --lib --no-default-features
+        - cargo test --tests --no-default-features
+
+before_install:
+  - set -e
+  - rustup self update
+
 script:
-  - cargo test --all
+  - cargo test --lib
+  - cargo test --tests
+
+after_script:
+  - set +e
+
+cache: cargo
+before_cache:
+  - chmod -R a+r $HOME/.cargo
+
+notifications:
+  email:
+    on_success: never
