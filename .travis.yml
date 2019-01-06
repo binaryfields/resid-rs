@@ -4,8 +4,10 @@ sudo: false
 matrix:
   include:
     - rust: stable
+      env: DESCRIPTION="stable Rust"
 
     - rust: nightly
+      env: DESCRIPTION="nightly Rust with no_std"
       script:
         - cargo test --lib --no-default-features
         - cargo test --tests --no-default-features
