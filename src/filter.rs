@@ -5,7 +5,8 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-#[cfg(not(feature="std"))] use alloc::prelude::*;
+#[cfg(not(feature = "std"))]
+use alloc::prelude::*;
 use core::f64;
 
 use super::spline;

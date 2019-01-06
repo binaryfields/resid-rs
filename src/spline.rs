@@ -99,8 +99,10 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::float_cmp))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
 
-#[cfg(not(feature="std"))] use alloc::prelude::*;
-#[cfg(not(feature="std"))] use alloc::vec;
+#[cfg(not(feature = "std"))]
+use alloc::prelude::*;
+#[cfg(not(feature = "std"))]
+use alloc::vec;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Point {

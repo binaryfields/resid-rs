@@ -6,10 +6,14 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
 
-#[cfg(not(feature="std"))] use alloc::prelude::*;
-#[cfg(feature="std")] use core::cmp;
-#[cfg(not(feature="std"))] use libm;
-#[cfg(not(feature="std"))] use libm::F64Ext;
+#[cfg(not(feature = "std"))]
+use alloc::prelude::*;
+#[cfg(feature = "std")]
+use core::cmp;
+#[cfg(not(feature = "std"))]
+use libm;
+#[cfg(not(feature = "std"))]
+use libm::F64Ext;
 
 use core::f64;
 
@@ -47,8 +51,10 @@ pub struct Sampler {
     fir_n: i32,
     fir_res: i32,
     sampling_method: SamplingMethod,
-    #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))] use_sse42: bool,
-    #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))] use_avx2: bool,
+    #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
+    use_sse42: bool,
+    #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
+    use_avx2: bool,
     // Runtime State
     buffer: [i16; RING_SIZE * 2],
     index: usize,
@@ -65,8 +71,10 @@ impl Sampler {
             fir_n: 0,
             fir_res: 0,
             sampling_method: SamplingMethod::Fast,
-            #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))] use_avx2: is_x86_feature_detected!("avx2"),
-            #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))] use_sse42: is_x86_feature_detected!("sse4.2"),
+            #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
+            use_avx2: is_x86_feature_detected!("avx2"),
+            #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
+            use_sse42: is_x86_feature_detected!("sse4.2"),
             buffer: [0; RING_SIZE * 2],
             index: 0,
             offset: 0,
@@ -160,8 +168,7 @@ impl Sampler {
             delta -= delta_sample;
             let sample_now = self.synth.output();
             buffer[index * interleave] = self.prev_sample
-                + ((self.offset * (sample_now - self.prev_sample) as i32) >> FIXP_SHIFT)
-                    as i16;
+                + ((self.offset * (sample_now - self.prev_sample) as i32) >> FIXP_SHIFT) as i16;
             index += 1;
             self.prev_sample = sample_now;
             self.update_sample_offset(next_sample_offset);
@@ -369,7 +376,7 @@ impl Sampler {
 
     #[inline]
     pub fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
-        #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))]
+        #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
         {
             if self.use_avx2 {
                 return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
@@ -382,7 +389,7 @@ impl Sampler {
     }
 
     #[target_feature(enable = "avx2")]
-    #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
     pub unsafe fn compute_convolution_fir_avx2(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(target_arch = "x86")]
         use std::arch::x86::*;
@@ -430,7 +437,7 @@ impl Sampler {
     }
 
     #[target_feature(enable = "sse4.2")]
-    #[cfg(all(feature="std", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
     pub unsafe fn compute_convolution_fir_sse(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(target_arch = "x86")]
         use std::arch::x86::*;
