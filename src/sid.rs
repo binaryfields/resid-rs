@@ -8,79 +8,36 @@ use super::sampler::{Sampler, SamplingMethod};
 use super::synth::Synth;
 use super::ChipModel;
 
-#[derive(Clone, Copy)]
-pub enum Reg {
-    FREQLO1,
-    FREQHI1,
-    PWLO1,
-    PWHI1,
-    CR1,
-    AD1,
-    SR1,
-    FREQLO2,
-    FREQHI2,
-    PWLO2,
-    PWHI2,
-    CR2,
-    AD2,
-    SR2,
-    FREQLO3,
-    FREQHI3,
-    PWLO3,
-    PWHI3,
-    CR3,
-    AD3,
-    SR3,
-    FCLO,
-    FCHI,
-    RESFILT,
-    MODVOL,
-    POTX,
-    POTY,
-    OSC3,
-    ENV3,
-}
-
-impl Reg {
-    pub fn from(reg: u8) -> Reg {
-        match reg {
-            0x00 => Reg::FREQLO1,
-            0x01 => Reg::FREQHI1,
-            0x02 => Reg::PWLO1,
-            0x03 => Reg::PWHI1,
-            0x04 => Reg::CR1,
-            0x05 => Reg::AD1,
-            0x06 => Reg::SR1,
-            0x07 => Reg::FREQLO2,
-            0x08 => Reg::FREQHI2,
-            0x09 => Reg::PWLO2,
-            0x0a => Reg::PWHI2,
-            0x0b => Reg::CR2,
-            0x0c => Reg::AD2,
-            0x0d => Reg::SR2,
-            0x0e => Reg::FREQLO3,
-            0x0f => Reg::FREQHI3,
-            0x10 => Reg::PWLO3,
-            0x11 => Reg::PWHI3,
-            0x12 => Reg::CR3,
-            0x13 => Reg::AD3,
-            0x14 => Reg::SR3,
-            0x15 => Reg::FCLO,
-            0x16 => Reg::FCHI,
-            0x17 => Reg::RESFILT,
-            0x18 => Reg::MODVOL,
-            0x19 => Reg::POTX,
-            0x1a => Reg::POTY,
-            0x1b => Reg::OSC3,
-            0x1c => Reg::ENV3,
-            _ => panic!("invalid reg {}", reg),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn addr(self) -> u8 {
-        self as u8
-    }
+pub mod reg {
+    pub const FREQLO1: u8 = 0x00;
+    pub const FREQHI1: u8 = 0x01;
+    pub const PWLO1: u8 = 0x02;
+    pub const PWHI1: u8 = 0x03;
+    pub const CR1: u8 = 0x04;
+    pub const AD1: u8 = 0x05;
+    pub const SR1: u8 = 0x06;
+    pub const FREQLO2: u8 = 0x07;
+    pub const FREQHI2: u8 = 0x08;
+    pub const PWLO2: u8 = 0x09;
+    pub const PWHI2: u8 = 0x0a;
+    pub const CR2: u8 = 0x0b;
+    pub const AD2: u8 = 0x0c;
+    pub const SR2: u8 = 0x0d;
+    pub const FREQLO3: u8 = 0x0e;
+    pub const FREQHI3: u8 = 0x0f;
+    pub const PWLO3: u8 = 0x10;
+    pub const PWHI3: u8 = 0x11;
+    pub const CR3: u8 = 0x12;
+    pub const AD3: u8 = 0x13;
+    pub const SR3: u8 = 0x14;
+    pub const FCLO: u8 = 0x15;
+    pub const FCHI: u8 = 0x16;
+    pub const RESFILT: u8 = 0x17;
+    pub const MODVOL: u8 = 0x18;
+    pub const POTX: u8 = 0x19;
+    pub const POTY: u8 = 0x1a;
+    pub const OSC3: u8 = 0x1b;
+    pub const ENV3: u8 = 0x1c;
 }
 
 #[derive(Debug)]
@@ -205,11 +162,11 @@ impl Sid {
     // -- Device I/O
 
     pub fn read(&self, reg: u8) -> u8 {
-        match Reg::from(reg) {
-            Reg::POTX => 0,
-            Reg::POTY => 0,
-            Reg::OSC3 => self.sampler.synth.voices[2].wave.borrow().read_osc(),
-            Reg::ENV3 => self.sampler.synth.voices[2].envelope.read_env(),
+        match reg {
+            reg::POTX => 0xff,
+            reg::POTY => 0xff,
+            reg::OSC3 => self.sampler.synth.voices[2].wave.borrow().read_osc(),
+            reg::ENV3 => self.sampler.synth.voices[2].envelope.read_env(),
             _ => self.bus_value,
         }
     }
@@ -217,128 +174,128 @@ impl Sid {
     pub fn write(&mut self, reg: u8, value: u8) {
         self.bus_value = value;
         self.bus_value_ttl = 0x2000;
-        match Reg::from(reg) {
-            Reg::FREQLO1 => {
+        match reg {
+            reg::FREQLO1 => {
                 self.sampler.synth.voices[0]
                     .wave
                     .borrow_mut()
                     .set_frequency_lo(value);
             }
-            Reg::FREQHI1 => {
+            reg::FREQHI1 => {
                 self.sampler.synth.voices[0]
                     .wave
                     .borrow_mut()
                     .set_frequency_hi(value);
             }
-            Reg::PWLO1 => {
+            reg::PWLO1 => {
                 self.sampler.synth.voices[0]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_lo(value);
             }
-            Reg::PWHI1 => {
+            reg::PWHI1 => {
                 self.sampler.synth.voices[0]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_hi(value);
             }
-            Reg::CR1 => {
+            reg::CR1 => {
                 self.sampler.synth.voices[0].set_control(value);
             }
-            Reg::AD1 => {
+            reg::AD1 => {
                 self.sampler.synth.voices[0]
                     .envelope
                     .set_attack_decay(value);
             }
-            Reg::SR1 => {
+            reg::SR1 => {
                 self.sampler.synth.voices[0]
                     .envelope
                     .set_sustain_release(value);
             }
-            Reg::FREQLO2 => {
+            reg::FREQLO2 => {
                 self.sampler.synth.voices[1]
                     .wave
                     .borrow_mut()
                     .set_frequency_lo(value);
             }
-            Reg::FREQHI2 => {
+            reg::FREQHI2 => {
                 self.sampler.synth.voices[1]
                     .wave
                     .borrow_mut()
                     .set_frequency_hi(value);
             }
-            Reg::PWLO2 => {
+            reg::PWLO2 => {
                 self.sampler.synth.voices[1]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_lo(value);
             }
-            Reg::PWHI2 => {
+            reg::PWHI2 => {
                 self.sampler.synth.voices[1]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_hi(value);
             }
-            Reg::CR2 => {
+            reg::CR2 => {
                 self.sampler.synth.voices[1].set_control(value);
             }
-            Reg::AD2 => {
+            reg::AD2 => {
                 self.sampler.synth.voices[1]
                     .envelope
                     .set_attack_decay(value);
             }
-            Reg::SR2 => {
+            reg::SR2 => {
                 self.sampler.synth.voices[1]
                     .envelope
                     .set_sustain_release(value);
             }
-            Reg::FREQLO3 => {
+            reg::FREQLO3 => {
                 self.sampler.synth.voices[2]
                     .wave
                     .borrow_mut()
                     .set_frequency_lo(value);
             }
-            Reg::FREQHI3 => {
+            reg::FREQHI3 => {
                 self.sampler.synth.voices[2]
                     .wave
                     .borrow_mut()
                     .set_frequency_hi(value);
             }
-            Reg::PWLO3 => {
+            reg::PWLO3 => {
                 self.sampler.synth.voices[2]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_lo(value);
             }
-            Reg::PWHI3 => {
+            reg::PWHI3 => {
                 self.sampler.synth.voices[2]
                     .wave
                     .borrow_mut()
                     .set_pulse_width_hi(value);
             }
-            Reg::CR3 => {
+            reg::CR3 => {
                 self.sampler.synth.voices[2].set_control(value);
             }
-            Reg::AD3 => {
+            reg::AD3 => {
                 self.sampler.synth.voices[2]
                     .envelope
                     .set_attack_decay(value);
             }
-            Reg::SR3 => {
+            reg::SR3 => {
                 self.sampler.synth.voices[2]
                     .envelope
                     .set_sustain_release(value);
             }
-            Reg::FCLO => {
+            reg::FCLO => {
                 self.sampler.synth.filter.set_fc_lo(value);
             }
-            Reg::FCHI => {
+            reg::FCHI => {
                 self.sampler.synth.filter.set_fc_hi(value);
             }
-            Reg::RESFILT => {
+            reg::RESFILT => {
                 self.sampler.synth.filter.set_res_filt(value);
             }
-            Reg::MODVOL => {
+            reg::MODVOL => {
                 self.sampler.synth.filter.set_mode_vol(value);
             }
             _ => {}

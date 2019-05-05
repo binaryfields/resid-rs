@@ -1,6 +1,6 @@
 [package]
 name = "resid-rs"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2018"
 authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 description = "Port of reSID, a MOS6581 SID emulator engine, to Rust"

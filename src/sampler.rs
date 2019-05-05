@@ -379,14 +379,14 @@ impl Sampler {
     #[inline]
     pub fn compute_convolution_fir(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
-            {
-                if self.use_avx2 {
-                    return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
-                }
-                if self.use_sse42 {
-                    return unsafe { self.compute_convolution_fir_sse(sample, fir) };
-                }
+        {
+            if self.use_avx2 {
+                return unsafe { self.compute_convolution_fir_avx2(sample, fir) };
             }
+            if self.use_sse42 {
+                return unsafe { self.compute_convolution_fir_sse(sample, fir) };
+            }
+        }
         self.compute_convolution_fir_fallback(sample, fir)
     }
 
