@@ -5,11 +5,7 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-#[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
-#[cfg(feature = "std")]
-use std::rc::Rc;
-
 use core::cell::RefCell;
 
 use super::envelope::EnvelopeGenerator;

@@ -6,16 +6,10 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
 
-#[cfg(not(feature = "std"))]
-use alloc::prelude::*;
-#[cfg(feature = "std")]
-use core::cmp;
-#[cfg(not(feature = "std"))]
-use libm;
+use alloc::vec::Vec;
+use core::f64;
 #[cfg(not(feature = "std"))]
 use libm::F64Ext;
-
-use core::f64;
 
 #[cfg(not(feature = "std"))]
 use super::math;
@@ -74,9 +68,9 @@ impl Sampler {
             fir_res: 0,
             sampling_method: SamplingMethod::Fast,
             #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
-            use_avx2: is_x86_feature_detected!("avx2"),
+            use_avx2: alloc::is_x86_feature_detected!("avx2"),
             #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
-            use_sse42: is_x86_feature_detected!("sse4.2"),
+            use_sse42: alloc::is_x86_feature_detected!("sse4.2"),
             buffer: [0; RING_SIZE * 2],
             index: 0,
             offset: 0,
@@ -394,12 +388,12 @@ impl Sampler {
     #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
     pub unsafe fn compute_convolution_fir_avx2(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(target_arch = "x86")]
-        use std::arch::x86::*;
+        use alloc::arch::x86::*;
         #[cfg(target_arch = "x86_64")]
-        use std::arch::x86_64::*;
+        use alloc::arch::x86_64::*;
 
         // Convolution with filter impulse response.
-        let len = cmp::min(sample.len(), fir.len());
+        let len = alloc::cmp::min(sample.len(), fir.len());
         let mut fs = &fir[..len];
         let mut ss = &sample[..len];
         let mut v1 = _mm256_set1_epi32(0);
@@ -442,12 +436,12 @@ impl Sampler {
     #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
     pub unsafe fn compute_convolution_fir_sse(&self, sample: &[i16], fir: &[i16]) -> i32 {
         #[cfg(target_arch = "x86")]
-        use std::arch::x86::*;
+        use alloc::arch::x86::*;
         #[cfg(target_arch = "x86_64")]
-        use std::arch::x86_64::*;
+        use alloc::arch::x86_64::*;
 
         // Convolution with filter impulse response.
-        let len = cmp::min(sample.len(), fir.len());
+        let len = alloc::cmp::min(sample.len(), fir.len());
         let mut fs = &fir[..len];
         let mut ss = &sample[..len];
         let mut v1 = _mm_set1_epi32(0);
