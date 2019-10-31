@@ -40,7 +40,7 @@ static FO_POINTS_6581: [(i32, i32); 31] = [
 
 fn set_f0(f0: &mut [i32; 2048]) {
     let points = FO_POINTS_6581
-        .into_iter()
+        .iter()
         .map(|&pt| spline::Point {
             x: pt.0 as f64,
             y: pt.1 as f64,
