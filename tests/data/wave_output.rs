@@ -1,4 +1,4 @@
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE1_OUTPUT: [u16; 500] = [
     15, 31, 46, 62, 78, 93, 109, 125,
     140, 156, 171, 187, 203, 218, 234, 250,
@@ -65,7 +65,7 @@ pub static RESID_WAVE1_OUTPUT: [u16; 500] = [
     426, 410, 395, 379
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE2_OUTPUT: [u16; 500] = [
     3, 7, 11, 15, 19, 23, 27, 31,
     35, 39, 42, 46, 50, 54, 58, 62,
@@ -132,7 +132,7 @@ pub static RESID_WAVE2_OUTPUT: [u16; 500] = [
     1941, 1945, 1949, 1953
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE3_OUTPUT: [u16; 500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -199,7 +199,7 @@ pub static RESID_WAVE3_OUTPUT: [u16; 500] = [
     0, 0, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE4_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -391,7 +391,7 @@ pub static RESID_WAVE4_OUTPUT: [u16; 1500] = [
     4095, 4095, 4095, 4095,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE5_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -583,7 +583,7 @@ pub static RESID_WAVE5_OUTPUT: [u16; 1500] = [
     3072, 3072, 3504, 3072,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE6_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -775,7 +775,7 @@ pub static RESID_WAVE6_OUTPUT: [u16; 1500] = [
     0, 0, 1744, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE7_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -967,7 +967,7 @@ pub static RESID_WAVE7_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE8_OUTPUT: [u16; 1500] = [
     4064, 4064, 4064, 4064, 4064, 4064, 4064, 4064,
     4064, 4064, 4064, 4064, 4064, 4064, 4064, 4064,

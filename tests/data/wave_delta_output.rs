@@ -1,4 +1,4 @@
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE1_OUTPUT: [u16; 500] = [
     390, 781, 1171, 1562, 1953, 2343, 2734, 3125,
     3515, 3906, 3895, 3504, 3113, 2723, 2332, 1941,
@@ -65,7 +65,7 @@ pub static RESID_WAVE1_OUTPUT: [u16; 500] = [
     2467, 2076, 1686, 1295,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE2_OUTPUT: [u16; 500] = [
     97, 195, 292, 390, 488, 585, 683, 781,
     878, 976, 1074, 1171, 1269, 1367, 1464, 1562,
@@ -132,7 +132,7 @@ pub static RESID_WAVE2_OUTPUT: [u16; 500] = [
     3479, 3576, 3674, 3772,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE3_OUTPUT: [u16; 500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -199,7 +199,7 @@ pub static RESID_WAVE3_OUTPUT: [u16; 500] = [
     0, 448, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE4_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 4095, 4095, 4095, 4095, 4095, 4095,
@@ -391,7 +391,7 @@ pub static RESID_WAVE4_OUTPUT: [u16; 1500] = [
     4095, 4095, 4095, 4095,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE5_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -583,7 +583,7 @@ pub static RESID_WAVE5_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE6_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -775,7 +775,7 @@ pub static RESID_WAVE6_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE7_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -967,7 +967,7 @@ pub static RESID_WAVE7_OUTPUT: [u16; 1500] = [
     0, 0, 0, 0,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub static RESID_WAVE8_OUTPUT: [u16; 1500] = [
     4064, 4064, 4064, 4032, 4032, 4032, 4032, 4032,
     4032, 4032, 4032, 3968, 3968, 3968, 3968, 3968,

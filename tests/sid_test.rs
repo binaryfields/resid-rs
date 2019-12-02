@@ -2,7 +2,7 @@ mod data;
 
 use resid::{ChipModel, Sid};
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static SID_DATA: [u16; 51] = [
     25, 177, 250, 28, 214, 250,
     25, 177, 250, 25, 177, 250,

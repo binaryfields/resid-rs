@@ -519,7 +519,7 @@ impl Filter {
     fn set_f0(&mut self) {
         let points = self
             .f0_points
-            .into_iter()
+            .iter()
             .map(|&pt| spline::Point {
                 x: pt.0 as f64,
                 y: pt.1 as f64,
