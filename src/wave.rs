@@ -5,9 +5,7 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-use alloc::rc::Rc;
 use bit_field::BitField;
-use core::cell::RefCell;
 
 use super::data;
 use super::ChipModel;
@@ -24,10 +22,8 @@ const OUTPUT_MASK: u16 = 0x0fff;
 /// when TEST is cleared.
 /// The noise waveform is taken from intermediate bits of a 23 bit shift
 /// register. This register is clocked by bit 19 of the accumulator.
+#[derive(Clone, Copy)]
 pub struct WaveformGenerator {
-    // Dependencies
-    sync_source: Option<Rc<RefCell<WaveformGenerator>>>,
-    sync_dest: Option<Rc<RefCell<WaveformGenerator>>>,
     // Configuration
     frequency: u16,
     pulse_width: u16,
@@ -47,6 +43,12 @@ pub struct WaveformGenerator {
     wave_st: &'static [u8; 4096],
 }
 
+pub struct Syncable<T> {
+    pub main: T,
+    pub sync_source: T,
+    pub sync_dest: T,
+}
+
 impl WaveformGenerator {
     pub fn new(chip_model: ChipModel) -> Self {
         let (wave_ps, wave_pst, wave_pt, wave_st) = match chip_model {
@@ -64,8 +66,6 @@ impl WaveformGenerator {
             ),
         };
         let mut waveform = WaveformGenerator {
-            sync_source: None,
-            sync_dest: None,
             frequency: 0,
             pulse_width: 0,
             waveform: 0,
@@ -120,20 +120,8 @@ impl WaveformGenerator {
         self.shift
     }
 
-    pub fn get_sync_dest_sync(&self) -> bool {
-        if let Some(ref sync_dest) = self.sync_dest {
-            sync_dest.borrow().sync
-        } else {
-            false
-        }
-    }
-
-    pub fn get_sync_source_acc(&self) -> u32 {
-        if let Some(ref sync_source) = self.sync_source {
-            sync_source.borrow().acc
-        } else {
-            0
-        }
+    pub fn get_sync(&self) -> bool {
+        self.sync
     }
 
     pub fn is_msb_rising(&self) -> bool {
@@ -190,14 +178,6 @@ impl WaveformGenerator {
     pub fn set_pulse_width_lo(&mut self, value: u8) {
         let result = (self.pulse_width & 0x0f00) | ((value as u16) & 0x00ff);
         self.pulse_width = result;
-    }
-
-    pub fn set_sync_dest(&mut self, dest: Rc<RefCell<WaveformGenerator>>) {
-        self.sync_dest = Some(dest);
-    }
-
-    pub fn set_sync_source(&mut self, source: Rc<RefCell<WaveformGenerator>>) {
-        self.sync_source = Some(source);
     }
 
     #[inline]
@@ -258,14 +238,14 @@ impl WaveformGenerator {
 
     /// 12-bit waveform output
     #[inline]
-    pub fn output(&self) -> u16 {
+    pub fn output(&self, sync_source: Option<&WaveformGenerator>) -> u16 {
         match self.waveform {
             0x0 => 0,
-            0x1 => self.output_t(),
+            0x1 => self.output_t(sync_source),
             0x2 => self.output_s(),
             0x3 => self.output_st(),
             0x4 => self.output_p(),
-            0x5 => self.output_pt(),
+            0x5 => self.output_pt(sync_source),
             0x6 => self.output_ps(),
             0x7 => self.output_pst(),
             0x8 => self.output_n(),
@@ -280,10 +260,6 @@ impl WaveformGenerator {
         }
     }
 
-    pub fn read_osc(&self) -> u8 {
-        (self.output() >> 4) as u8
-    }
-
     pub fn reset(&mut self) {
         self.frequency = 0;
         self.pulse_width = 0;
@@ -294,37 +270,6 @@ impl WaveformGenerator {
         self.acc = 0;
         self.shift = 0x007f_fff8;
         self.msb_rising = false;
-    }
-
-    /// Synchronize oscillators.
-    /// This must be done after all the oscillators have been clock()'ed since the
-    /// oscillators operate in parallel.
-    /// Note that the oscillators must be clocked exactly on the cycle when the
-    /// MSB is set high for hard sync to operate correctly. See SID::clock().
-    #[inline]
-    pub fn synchronize(&mut self) {
-        // A special case occurs when a sync source is synced itself on the same
-        // cycle as when its MSB is set high. In this case the destination will
-        // not be synced. This has been verified by sampling OSC3.
-        if self.is_msb_rising() {
-            let dest_sync = if let Some(ref dest) = self.sync_dest {
-                dest.borrow().sync
-            } else {
-                false
-            };
-            if dest_sync {
-                let source_rising = if let Some(ref source) = self.sync_source {
-                    source.borrow().is_msb_rising()
-                } else {
-                    false
-                };
-                if !(self.sync && source_rising) {
-                    if let Some(ref dest) = self.sync_dest {
-                        dest.borrow_mut().set_acc(0);
-                    }
-                }
-            }
-        }
     }
 
     // -- Output Functions
@@ -391,9 +336,9 @@ impl WaveformGenerator {
     /// left-shifted (half the resolution, full amplitude).
     /// Ring modulation substitutes the MSB with MSB EOR sync_source MSB.
     #[inline]
-    fn output_t(&self) -> u16 {
+    fn output_t(&self, sync_source: Option<&WaveformGenerator>) -> u16 {
         let acc = if self.ring {
-            self.acc ^ self.get_sync_source_acc()
+            self.acc ^ sync_source.map(|x| x.acc).unwrap_or(0)
         } else {
             self.acc
         };
@@ -415,12 +360,39 @@ impl WaveformGenerator {
     }
 
     #[inline]
-    fn output_pt(&self) -> u16 {
-        ((self.wave_pt[(self.output_t() >> 1) as usize] as u16) << 4) & self.output_p()
+    fn output_pt(&self, sync_source: Option<&WaveformGenerator>) -> u16 {
+        ((self.wave_pt[(self.output_t(sync_source) >> 1) as usize] as u16) << 4) & self.output_p()
     }
 
     #[inline]
     fn output_st(&self) -> u16 {
         (self.wave_st[self.output_s() as usize] as u16) << 4
+    }
+}
+
+impl Syncable<&'_ WaveformGenerator> {
+    pub fn read_osc(&self) -> u8 {
+        (self.main.output(Some(self.sync_source)) >> 4) as u8
+    }
+}
+
+impl Syncable<&'_ mut WaveformGenerator> {
+    /// Synchronize oscillators.
+    /// This must be done after all the oscillators have been clock()'ed since the
+    /// oscillators operate in parallel.
+    /// Note that the oscillators must be clocked exactly on the cycle when the
+    /// MSB is set high for hard sync to operate correctly. See SID::clock().
+    #[inline]
+    pub fn synchronize(&mut self) {
+        // A special case occurs when a sync source is synced itself on the same
+        // cycle as when its MSB is set high. In this case the destination will
+        // not be synced. This has been verified by sampling OSC3.
+        if self.main.is_msb_rising() {
+            if self.sync_dest.sync {
+                if !(self.main.sync && self.sync_source.is_msb_rising()) {
+                    self.sync_dest.set_acc(0);
+                }
+            }
+        }
     }
 }

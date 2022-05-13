@@ -122,6 +122,7 @@ static FO_POINTS_8580: [(i32, i32); 19] = [
 /// into its region of quasi-linear operation using a feedback resistor from
 /// input to output, a MOS inverter can be made to act like an op-amp for
 /// small signals centered around the switching threshold.
+#[derive(Clone, Copy)]
 pub struct Filter {
     // Configuration
     enabled: bool,

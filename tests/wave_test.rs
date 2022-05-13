@@ -17,7 +17,7 @@ fn waveform_1() {
     setup(&mut wave, 1, 32000, 100);
     for i in 0..500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE1_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE1_OUTPUT[i]);
     }
 }
 
@@ -27,7 +27,7 @@ fn waveform_2() {
     setup(&mut wave, 2, 16000, 100);
     for i in 0..500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE2_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE2_OUTPUT[i]);
     }
 }
 
@@ -37,7 +37,7 @@ fn waveform_3() {
     setup(&mut wave, 3, 32000, 100);
     for i in 0..500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE3_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE3_OUTPUT[i]);
     }
 }
 
@@ -47,7 +47,7 @@ fn waveform_4() {
     setup(&mut wave, 4, 16000, 1000);
     for i in 0..1500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE4_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE4_OUTPUT[i]);
     }
 }
 
@@ -57,7 +57,7 @@ fn waveform_5() {
     setup(&mut wave, 5, 16000, 1000);
     for i in 0..1500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE5_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE5_OUTPUT[i]);
     }
 }
 
@@ -67,7 +67,7 @@ fn waveform_6() {
     setup(&mut wave, 6, 16000, 1000);
     for i in 0..1500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE6_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE6_OUTPUT[i]);
     }
 }
 
@@ -77,7 +77,7 @@ fn waveform_7() {
     setup(&mut wave, 7, 16000, 1000);
     for i in 0..1500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE7_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE7_OUTPUT[i]);
     }
 }
 
@@ -87,7 +87,7 @@ fn waveform_8() {
     setup(&mut wave, 8, 16000, 1000);
     for i in 0..1500 {
         wave.clock();
-        assert_eq!(wave.output(), data::wave_output::RESID_WAVE8_OUTPUT[i]);
+        assert_eq!(wave.output(None), data::wave_output::RESID_WAVE8_OUTPUT[i]);
     }
 }
 
@@ -98,7 +98,7 @@ fn waveform_delta_1() {
     for i in 0..500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE1_OUTPUT[i]
         );
     }
@@ -111,7 +111,7 @@ fn waveform_delta_2() {
     for i in 0..500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE2_OUTPUT[i]
         );
     }
@@ -124,7 +124,7 @@ fn waveform_delta_3() {
     for i in 0..500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE3_OUTPUT[i]
         );
     }
@@ -137,7 +137,7 @@ fn waveform_delta_4() {
     for i in 0..1500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE4_OUTPUT[i]
         );
     }
@@ -150,7 +150,7 @@ fn waveform_delta_5() {
     for i in 0..1500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE5_OUTPUT[i]
         );
     }
@@ -163,7 +163,7 @@ fn waveform_delta_6() {
     for i in 0..1500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE6_OUTPUT[i]
         );
     }
@@ -176,7 +176,7 @@ fn waveform_delta_7() {
     for i in 0..1500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE7_OUTPUT[i]
         );
     }
@@ -189,7 +189,7 @@ fn waveform_delta_8() {
     for i in 0..1500 {
         wave.clock_delta(25);
         assert_eq!(
-            wave.output(),
+            wave.output(None),
             data::wave_delta_output::RESID_WAVE8_OUTPUT[i]
         );
     }

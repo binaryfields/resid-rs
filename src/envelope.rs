@@ -94,6 +94,7 @@ pub enum State {
 /// decay, in effect further dividing the clock to the envelope counter.
 /// The period of this counter is set to 1, 2, 4, 8, 16, 30 at the envelope
 /// counter values 255, 93, 54, 26, 14, 6, respectively.
+#[derive(Clone, Copy)]
 pub struct EnvelopeGenerator {
     // Configuration
     attack: u8,

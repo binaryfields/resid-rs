@@ -38,6 +38,7 @@ pub enum SamplingMethod {
     ResampleFast,
 }
 
+#[derive(Clone)]
 pub struct Sampler {
     // Dependencies
     pub synth: Synth,

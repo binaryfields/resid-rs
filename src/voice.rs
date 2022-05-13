@@ -5,11 +5,8 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-use alloc::rc::Rc;
-use core::cell::RefCell;
-
 use super::envelope::EnvelopeGenerator;
-use super::wave::WaveformGenerator;
+use super::wave::{Syncable, WaveformGenerator};
 use super::ChipModel;
 
 /// The waveform output range is 0x000 to 0xfff, so the "zero"
@@ -38,13 +35,14 @@ const WAVE_ZERO: i32 = 0x0380;
 /// this follows from the DC level in the waveform output.
 const VOICE_DC: i32 = 0x800 * 0xff;
 
+#[derive(Clone, Copy)]
 pub struct Voice {
     // Configuration
     wave_zero: i32,
     voice_dc: i32,
     // Generators
     pub envelope: EnvelopeGenerator,
-    pub wave: Rc<RefCell<WaveformGenerator>>,
+    pub wave: WaveformGenerator,
 }
 
 impl Voice {
@@ -54,44 +52,60 @@ impl Voice {
                 wave_zero: WAVE_ZERO,
                 voice_dc: VOICE_DC,
                 envelope: EnvelopeGenerator::default(),
-                wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
+                wave: WaveformGenerator::new(chip_model),
             },
             ChipModel::Mos8580 => Voice {
                 // No DC offsets in the MOS8580.
                 wave_zero: 0x800,
                 voice_dc: 0,
                 envelope: EnvelopeGenerator::default(),
-                wave: Rc::new(RefCell::new(WaveformGenerator::new(chip_model))),
+                wave: WaveformGenerator::new(chip_model),
             },
         }
     }
 
-    pub fn get_wave(&self) -> Rc<RefCell<WaveformGenerator>> {
-        self.wave.clone()
-    }
-
     pub fn set_control(&mut self, value: u8) {
         self.envelope.set_control(value);
-        self.wave.borrow_mut().set_control(value);
-    }
-
-    pub fn set_sync_source(&mut self, source: &mut Voice) {
-        self.wave.borrow_mut().set_sync_source(source.get_wave());
-        let source_wave = source.get_wave();
-        source_wave.borrow_mut().set_sync_dest(self.get_wave());
+        self.wave.set_control(value);
     }
 
     /// Amplitude modulated 20-bit waveform output.
     /// Range [-2048*255, 2047*255].
     #[inline]
-    pub fn output(&self) -> i32 {
+    pub fn output(&self, sync_source: Option<&WaveformGenerator>) -> i32 {
         // Multiply oscillator output with envelope output.
-        (self.wave.borrow().output() as i32 - self.wave_zero) * self.envelope.output() as i32
+        (self.wave.output(sync_source) as i32 - self.wave_zero) * self.envelope.output() as i32
             + self.voice_dc
     }
 
     pub fn reset(&mut self) {
         self.envelope.reset();
-        self.wave.borrow_mut().reset();
+        self.wave.reset();
+    }
+}
+
+impl Syncable<&'_ Voice> {
+    pub fn output(&self) -> i32 {
+        self.main.output(Some(&self.sync_source.wave))
+    }
+}
+
+impl<'a> Syncable<&'a Voice> {
+    pub fn wave(self) -> Syncable<&'a WaveformGenerator> {
+        Syncable {
+            main: &self.main.wave,
+            sync_dest: &self.sync_dest.wave,
+            sync_source: &self.sync_source.wave,
+        }
+    }
+}
+
+impl<'a> Syncable<&'a mut Voice> {
+    pub fn wave(self) -> Syncable<&'a mut WaveformGenerator> {
+        Syncable {
+            main: &mut self.main.wave,
+            sync_dest: &mut self.sync_dest.wave,
+            sync_source: &mut self.sync_source.wave,
+        }
     }
 }
