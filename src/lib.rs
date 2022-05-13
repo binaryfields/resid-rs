@@ -3,7 +3,6 @@
 // Portions (c) 2004 Dag Lem <resid@nimrod.no>
 // Licensed under the GPLv3. See LICENSE file in the project root for full license text.
 
-#![feature(array_methods)]
 #![no_std]
 
 #[cfg(not(feature = "std"))]

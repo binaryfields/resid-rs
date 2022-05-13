@@ -34,7 +34,8 @@ impl Synth {
     }
 
     pub fn syncable_voice(&self, i: usize) -> Syncable<&'_ Voice> {
-        let mut voices_ref = self.voices.each_ref();
+        let [a, b, c] = &self.voices;
+        let mut voices_ref = [a, b, c];
         voices_ref.rotate_left(i);
         let [main, sync_dest, sync_source] = voices_ref;
         Syncable {
@@ -45,7 +46,8 @@ impl Synth {
     }
 
     pub fn syncable_voice_mut(&mut self, i: usize) -> Syncable<&'_ mut Voice> {
-        let mut voices_mut = self.voices.each_mut();
+        let [a, b, c] = &mut self.voices;
+        let mut voices_mut = [a, b, c];
         voices_mut.rotate_left(i);
         let [main, sync_dest, sync_source] = voices_mut;
         Syncable {
