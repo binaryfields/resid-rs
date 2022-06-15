@@ -6,8 +6,11 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
 
-use alloc::vec::Vec;
 use core::f64;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[cfg(not(feature = "std"))]
 use libm::F64Ext;
 
@@ -34,7 +37,9 @@ const FIXP_MASK: i32 = 0xffff;
 pub enum SamplingMethod {
     Fast,
     Interpolate,
+    #[cfg(feature = "alloc")]
     Resample,
+    #[cfg(feature = "alloc")]
     ResampleFast,
 }
 
@@ -51,6 +56,7 @@ pub struct Sampler {
     pub synth: Synth,
     // Configuration
     cycles_per_sample: u32,
+    #[cfg(feature = "alloc")]
     fir: Fir,
     sampling_method: SamplingMethod,
     #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -69,6 +75,7 @@ impl Sampler {
         Sampler {
             synth,
             cycles_per_sample: 0,
+            #[cfg(feature = "alloc")]
             fir: Fir {
                 data: Vec::new(),
                 n: 0,
@@ -90,6 +97,8 @@ impl Sampler {
         self.cycles_per_sample =
             (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
         self.sampling_method = method;
+
+        #[cfg(feature = "alloc")]
         if self.sampling_method == SamplingMethod::Resample
             || self.sampling_method == SamplingMethod::ResampleFast
         {
@@ -116,7 +125,9 @@ impl Sampler {
         match self.sampling_method {
             SamplingMethod::Fast => self.clock_fast(delta, buffer, interleave),
             SamplingMethod::Interpolate => self.clock_interpolate(delta, buffer, interleave),
+            #[cfg(feature = "alloc")]
             SamplingMethod::Resample => self.clock_resample_interpolate(delta, buffer, interleave),
+            #[cfg(feature = "alloc")]
             SamplingMethod::ResampleFast => self.clock_resample_fast(delta, buffer, interleave),
         }
     }
@@ -222,6 +233,7 @@ impl Sampler {
     ///
     /// NB! the result of right shifting negative numbers is really
     /// implementation dependent in the C++ standard.
+    #[cfg(feature = "alloc")]
     #[inline]
     fn clock_resample_interpolate(
         &mut self,
@@ -312,6 +324,7 @@ impl Sampler {
     }
 
     /// SID clocking with audio sampling - cycle based with audio resampling.
+    #[cfg(feature = "alloc")]
     #[inline]
     fn clock_resample_fast(
         &mut self,
@@ -522,6 +535,7 @@ impl Sampler {
         self.offset = next_sample_offset & FIXP_MASK;
     }
 
+    #[cfg(feature = "alloc")]
     fn init_fir(
         &mut self,
         clock_freq: f64,
@@ -578,7 +592,9 @@ impl Sampler {
         self.fir.res = 1 << n;
 
         self.fir.data.clear();
-        self.fir.data.resize((self.fir.n * self.fir.res) as usize, 0);
+        self.fir
+            .data
+            .resize((self.fir.n * self.fir.res) as usize, 0);
 
         // Calculate fir_RES FIR tables for linear interpolation.
         for i in 0..self.fir.res {
