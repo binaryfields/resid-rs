@@ -5,7 +5,6 @@
 
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 
-use alloc::vec::Vec;
 use core::f64;
 
 use super::spline;
@@ -518,16 +517,8 @@ impl Filter {
     }
 
     fn set_f0(&mut self) {
-        let points = self
-            .f0_points
-            .iter()
-            .map(|&pt| spline::Point {
-                x: pt.0 as f64,
-                y: pt.1 as f64,
-            })
-            .collect::<Vec<spline::Point>>();
         let mut plotter = spline::PointPlotter::new(&mut self.f0[..2048]);
-        spline::interpolate(&points, &mut plotter, 1.0);
+        spline::interpolate(self.f0_points, &mut plotter, 1.0);
     }
 
     fn set_q(&mut self) {

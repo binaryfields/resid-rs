@@ -105,6 +105,15 @@ pub struct Point {
     pub y: f64,
 }
 
+impl From<(i32, i32)> for Point {
+    fn from((x, y): (i32, i32)) -> Point {
+        Point {
+            x: x as f64,
+            y: y as f64,
+        }
+    }
+}
+
 pub struct PointPlotter<'a> {
     output: &'a mut [i32],
 }
@@ -193,14 +202,14 @@ fn interpolate_forward_difference(
 /// desirable, the end points can simply be repeated to ensure interpolation.
 /// Note also that points of non-differentiability and discontinuity can be
 /// introduced by repeating points.
-pub fn interpolate(points: &[Point], plotter: &mut PointPlotter, res: f64) {
+pub fn interpolate<P: Into<Point> + Copy>(points: &[P], plotter: &mut PointPlotter, res: f64) {
     let last_index = points.len() - 4;
     let mut i = 0;
     while i <= last_index {
-        let p0 = points[i];
-        let p1 = points[i + 1];
-        let p2 = points[i + 2];
-        let p3 = points[i + 3];
+        let p0 = points[i].into();
+        let p1 = points[i + 1].into();
+        let p2 = points[i + 2].into();
+        let p3 = points[i + 3].into();
         // p1 and p2 equal; single point.
         if p1.x != p2.x {
             let k1;
