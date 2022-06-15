@@ -46,12 +46,8 @@ fn set_f0(f0: &mut [i32; 2048]) {
             y: pt.1 as f64,
         })
         .collect::<Vec<spline::Point>>();
-    let mut plotter = spline::PointPlotter::new(2048);
+    let mut plotter = spline::PointPlotter::new(f0);
     spline::interpolate(&points, &mut plotter, 1.0);
-    let output = plotter.output();
-    for i in 0..2048 {
-        f0[i] = output[i];
-    }
 }
 
 #[test]

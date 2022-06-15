@@ -99,28 +99,19 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::float_cmp))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
 
-use alloc::vec;
-use alloc::vec::Vec;
-
 #[derive(Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
 }
 
-pub struct PointPlotter {
-    output: Vec<i32>,
+pub struct PointPlotter<'a> {
+    output: &'a mut [i32],
 }
 
-impl PointPlotter {
-    pub fn new(capacity: usize) -> Self {
-        PointPlotter {
-            output: vec![0; capacity],
-        }
-    }
-
-    pub fn output(&self) -> &Vec<i32> {
-        &self.output
+impl<'a> PointPlotter<'a> {
+    pub fn new(output: &'a mut [i32]) -> Self {
+        PointPlotter { output }
     }
 
     pub fn plot(&mut self, x: f64, y: f64) {

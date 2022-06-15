@@ -526,10 +526,8 @@ impl Filter {
                 y: pt.1 as f64,
             })
             .collect::<Vec<spline::Point>>();
-        let mut plotter = spline::PointPlotter::new(2048);
+        let mut plotter = spline::PointPlotter::new(&mut self.f0[..2048]);
         spline::interpolate(&points, &mut plotter, 1.0);
-        let output = plotter.output();
-        self.f0[..2048].clone_from_slice(&output[..2048]);
     }
 
     fn set_q(&mut self) {
