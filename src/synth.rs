@@ -8,12 +8,14 @@
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
 use super::voice::Voice;
+use super::wave::{Syncable, WaveformGenerator};
 use super::ChipModel;
 
 const OUTPUT_RANGE: u32 = 1 << 16;
 const OUTPUT_HALF: i32 = (OUTPUT_RANGE >> 1) as i32;
 const SAMPLES_PER_OUTPUT: u32 = (((4095 * 255) >> 7) * 3 * 15 * 2 / OUTPUT_RANGE);
 
+#[derive(Clone, Copy)]
 pub struct Synth {
     pub ext_filter: ExternalFilter,
     pub filter: Filter,
@@ -23,17 +25,35 @@ pub struct Synth {
 
 impl Synth {
     pub fn new(chip_model: ChipModel) -> Self {
-        let mut voice1 = Voice::new(chip_model);
-        let mut voice2 = Voice::new(chip_model);
-        let mut voice3 = Voice::new(chip_model);
-        voice1.set_sync_source(&mut voice3);
-        voice2.set_sync_source(&mut voice1);
-        voice3.set_sync_source(&mut voice2);
         Synth {
             ext_filter: ExternalFilter::new(chip_model),
             filter: Filter::new(chip_model),
-            voices: [voice1, voice2, voice3],
+            voices: [Voice::new(chip_model); 3],
             ext_in: 0,
+        }
+    }
+
+    pub fn syncable_voice(&self, i: usize) -> Syncable<&'_ Voice> {
+        let [a, b, c] = &self.voices;
+        let mut voices_ref = [a, b, c];
+        voices_ref.rotate_left(i);
+        let [main, sync_dest, sync_source] = voices_ref;
+        Syncable {
+            main,
+            sync_dest,
+            sync_source,
+        }
+    }
+
+    pub fn syncable_voice_mut(&mut self, i: usize) -> Syncable<&'_ mut Voice> {
+        let [a, b, c] = &mut self.voices;
+        let mut voices_mut = [a, b, c];
+        voices_mut.rotate_left(i);
+        let [main, sync_dest, sync_source] = voices_mut;
+        Syncable {
+            main,
+            sync_dest,
+            sync_source,
         }
     }
 
@@ -44,17 +64,17 @@ impl Synth {
         }
         // Clock oscillators.
         for i in 0..3 {
-            self.voices[i].wave.borrow_mut().clock();
+            self.voices[i].wave.clock();
         }
         // Synchronize oscillators.
         for i in 0..3 {
-            self.voices[i].wave.borrow_mut().synchronize();
+            self.syncable_voice_mut(i).wave().synchronize();
         }
         // Clock filter.
         self.filter.clock(
-            self.voices[0].output(),
-            self.voices[1].output(),
-            self.voices[2].output(),
+            self.syncable_voice(0).output(),
+            self.syncable_voice(1).output(),
+            self.syncable_voice(2).output(),
             self.ext_in,
         );
         // Clock external filter.
@@ -73,14 +93,14 @@ impl Synth {
             // correctly.
             let mut delta_min = delta_osc;
             for i in 0..3 {
-                let wave = &self.voices[i].wave;
+                let wave = self.syncable_voice(i).wave();
                 // It is only necessary to clock on the MSB of an oscillator that is
                 // a sync source and has freq != 0.
-                if !(wave.borrow().get_sync_dest_sync() && wave.borrow().get_frequency() != 0) {
+                if !(wave.sync_dest.get_sync() && wave.main.get_frequency() != 0) {
                     continue;
                 }
-                let freq = wave.borrow().get_frequency() as u32;
-                let acc = wave.borrow().get_acc();
+                let freq = wave.main.get_frequency() as u32;
+                let acc = wave.main.get_acc();
                 // Clock on MSB off if MSB is on, clock on MSB on if MSB is off.
                 let delta_acc = if acc & 0x0080_0000 != 0 {
                     0x0100_0000 - acc
@@ -97,20 +117,20 @@ impl Synth {
             }
             // Clock oscillators.
             for i in 0..3 {
-                self.voices[i].wave.borrow_mut().clock_delta(delta_min);
+                self.voices[i].wave.clock_delta(delta_min);
             }
             // Synchronize oscillators.
             for i in 0..3 {
-                self.voices[i].wave.borrow_mut().synchronize();
+                self.syncable_voice_mut(i).wave().synchronize();
             }
             delta_osc -= delta_min;
         }
         // Clock filter.
         self.filter.clock_delta(
             delta,
-            self.voices[0].output(),
-            self.voices[1].output(),
-            self.voices[2].output(),
+            self.syncable_voice(0).output(),
+            self.syncable_voice(1).output(),
+            self.syncable_voice(2).output(),
             self.ext_in,
         );
         // Clock external filter.

@@ -60,6 +60,7 @@ pub struct State {
     pub rate_counter_period: [u16; 3],
 }
 
+#[derive(Clone)]
 pub struct Sid {
     // Functional Units
     sampler: Sampler,
@@ -165,7 +166,7 @@ impl Sid {
         match reg {
             reg::POTX => 0xff,
             reg::POTY => 0xff,
-            reg::OSC3 => self.sampler.synth.voices[2].wave.borrow().read_osc(),
+            reg::OSC3 => self.sampler.synth.syncable_voice(2).wave().read_osc(),
             reg::ENV3 => self.sampler.synth.voices[2].envelope.read_env(),
             _ => self.bus_value,
         }
@@ -176,28 +177,16 @@ impl Sid {
         self.bus_value_ttl = 0x2000;
         match reg {
             reg::FREQLO1 => {
-                self.sampler.synth.voices[0]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_lo(value);
+                self.sampler.synth.voices[0].wave.set_frequency_lo(value);
             }
             reg::FREQHI1 => {
-                self.sampler.synth.voices[0]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_hi(value);
+                self.sampler.synth.voices[0].wave.set_frequency_hi(value);
             }
             reg::PWLO1 => {
-                self.sampler.synth.voices[0]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_lo(value);
+                self.sampler.synth.voices[0].wave.set_pulse_width_lo(value);
             }
             reg::PWHI1 => {
-                self.sampler.synth.voices[0]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_hi(value);
+                self.sampler.synth.voices[0].wave.set_pulse_width_hi(value);
             }
             reg::CR1 => {
                 self.sampler.synth.voices[0].set_control(value);
@@ -213,28 +202,16 @@ impl Sid {
                     .set_sustain_release(value);
             }
             reg::FREQLO2 => {
-                self.sampler.synth.voices[1]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_lo(value);
+                self.sampler.synth.voices[1].wave.set_frequency_lo(value);
             }
             reg::FREQHI2 => {
-                self.sampler.synth.voices[1]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_hi(value);
+                self.sampler.synth.voices[1].wave.set_frequency_hi(value);
             }
             reg::PWLO2 => {
-                self.sampler.synth.voices[1]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_lo(value);
+                self.sampler.synth.voices[1].wave.set_pulse_width_lo(value);
             }
             reg::PWHI2 => {
-                self.sampler.synth.voices[1]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_hi(value);
+                self.sampler.synth.voices[1].wave.set_pulse_width_hi(value);
             }
             reg::CR2 => {
                 self.sampler.synth.voices[1].set_control(value);
@@ -250,28 +227,16 @@ impl Sid {
                     .set_sustain_release(value);
             }
             reg::FREQLO3 => {
-                self.sampler.synth.voices[2]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_lo(value);
+                self.sampler.synth.voices[2].wave.set_frequency_lo(value);
             }
             reg::FREQHI3 => {
-                self.sampler.synth.voices[2]
-                    .wave
-                    .borrow_mut()
-                    .set_frequency_hi(value);
+                self.sampler.synth.voices[2].wave.set_frequency_hi(value);
             }
             reg::PWLO3 => {
-                self.sampler.synth.voices[2]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_lo(value);
+                self.sampler.synth.voices[2].wave.set_pulse_width_lo(value);
             }
             reg::PWHI3 => {
-                self.sampler.synth.voices[2]
-                    .wave
-                    .borrow_mut()
-                    .set_pulse_width_hi(value);
+                self.sampler.synth.voices[2].wave.set_pulse_width_hi(value);
             }
             reg::CR3 => {
                 self.sampler.synth.voices[2].set_control(value);
@@ -322,7 +287,7 @@ impl Sid {
         };
         for i in 0..3 {
             let j = i * 7;
-            let wave = self.sampler.synth.voices[i].wave.borrow();
+            let wave = &self.sampler.synth.voices[i].wave;
             let envelope = &self.sampler.synth.voices[i].envelope;
             state.sid_register[j] = wave.get_frequency_lo();
             state.sid_register[j + 1] = wave.get_frequency_hi();
@@ -347,7 +312,7 @@ impl Sid {
         state.bus_value_ttl = self.bus_value_ttl;
         state.ext_in = self.sampler.synth.ext_in;
         for i in 0..3 {
-            let wave = self.sampler.synth.voices[i].wave.borrow();
+            let wave = &self.sampler.synth.voices[i].wave;
             let envelope = &self.sampler.synth.voices[i].envelope;
             state.accumulator[i] = wave.get_acc();
             state.shift_register[i] = wave.get_shift();
@@ -371,8 +336,8 @@ impl Sid {
         self.sampler.synth.ext_in = state.ext_in;
         for i in 0..3 {
             let envelope = &mut self.sampler.synth.voices[i].envelope;
-            self.sampler.synth.voices[i].wave.borrow_mut().acc = state.accumulator[i];
-            self.sampler.synth.voices[i].wave.borrow_mut().shift = state.shift_register[i];
+            self.sampler.synth.voices[i].wave.acc = state.accumulator[i];
+            self.sampler.synth.voices[i].wave.shift = state.shift_register[i];
             envelope.state = match state.envelope_state[i] {
                 0 => EnvState::Attack,
                 1 => EnvState::DecaySustain,

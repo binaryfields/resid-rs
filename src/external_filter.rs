@@ -28,6 +28,7 @@ const W0_HP: i32 = 105;
 /// additional low-pass and high-pass 3dB-frequencies in the order of hundreds
 /// of kHz. This calls for a sampling frequency of several MHz, which is far
 /// too high for practical use.
+#[derive(Clone, Copy)]
 pub struct ExternalFilter {
     // Configuration
     enabled: bool,
