@@ -8,12 +8,12 @@
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
 use super::voice::Voice;
-use super::wave::{Syncable, WaveformGenerator};
+use super::wave::Syncable;
 use super::ChipModel;
 
 const OUTPUT_RANGE: u32 = 1 << 16;
 const OUTPUT_HALF: i32 = (OUTPUT_RANGE >> 1) as i32;
-const SAMPLES_PER_OUTPUT: u32 = (((4095 * 255) >> 7) * 3 * 15 * 2 / OUTPUT_RANGE);
+const SAMPLES_PER_OUTPUT: u32 = ((4095 * 255) >> 7) * 3 * 15 * 2 / OUTPUT_RANGE;
 
 #[derive(Clone, Copy)]
 pub struct Synth {
