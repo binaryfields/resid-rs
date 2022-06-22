@@ -15,7 +15,8 @@ name = "resid"
 
 [features]
 default = ["std"]
-std = []
+std = ["alloc"]
+alloc = []
 
 [dependencies]
 bit_field = "0.10"

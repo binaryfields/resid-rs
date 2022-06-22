@@ -6,8 +6,11 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
 
-use alloc::vec::Vec;
 use core::f64;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[cfg(not(feature = "std"))]
 use libm::F64Ext;
 
@@ -34,8 +37,17 @@ const FIXP_MASK: i32 = 0xffff;
 pub enum SamplingMethod {
     Fast,
     Interpolate,
+    #[cfg(feature = "alloc")]
     Resample,
+    #[cfg(feature = "alloc")]
     ResampleFast,
+}
+
+#[derive(Clone)]
+struct Fir {
+    data: Vec<i16>,
+    n: i32,
+    res: i32,
 }
 
 #[derive(Clone)]
@@ -44,9 +56,8 @@ pub struct Sampler {
     pub synth: Synth,
     // Configuration
     cycles_per_sample: u32,
-    fir: Vec<i16>,
-    fir_n: i32,
-    fir_res: i32,
+    #[cfg(feature = "alloc")]
+    fir: Fir,
     sampling_method: SamplingMethod,
     #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
     use_sse42: bool,
@@ -64,9 +75,12 @@ impl Sampler {
         Sampler {
             synth,
             cycles_per_sample: 0,
-            fir: Vec::new(),
-            fir_n: 0,
-            fir_res: 0,
+            #[cfg(feature = "alloc")]
+            fir: Fir {
+                data: Vec::new(),
+                n: 0,
+                res: 0,
+            },
             sampling_method: SamplingMethod::Fast,
             #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
             use_avx2: alloc::is_x86_feature_detected!("avx2"),
@@ -83,6 +97,8 @@ impl Sampler {
         self.cycles_per_sample =
             (clock_freq as f64 / sample_freq as f64 * (1 << FIXP_SHIFT) as f64 + 0.5) as u32;
         self.sampling_method = method;
+
+        #[cfg(feature = "alloc")]
         if self.sampling_method == SamplingMethod::Resample
             || self.sampling_method == SamplingMethod::ResampleFast
         {
@@ -109,7 +125,9 @@ impl Sampler {
         match self.sampling_method {
             SamplingMethod::Fast => self.clock_fast(delta, buffer, interleave),
             SamplingMethod::Interpolate => self.clock_interpolate(delta, buffer, interleave),
+            #[cfg(feature = "alloc")]
             SamplingMethod::Resample => self.clock_resample_interpolate(delta, buffer, interleave),
+            #[cfg(feature = "alloc")]
             SamplingMethod::ResampleFast => self.clock_resample_fast(delta, buffer, interleave),
         }
     }
@@ -215,6 +233,7 @@ impl Sampler {
     ///
     /// NB! the result of right shifting negative numbers is really
     /// implementation dependent in the C++ standard.
+    #[cfg(feature = "alloc")]
     #[inline]
     fn clock_resample_interpolate(
         &mut self,
@@ -242,34 +261,34 @@ impl Sampler {
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
-            let fir_offset_1 = (self.offset * self.fir_res) >> FIXP_SHIFT;
-            let fir_offset_rmd = (self.offset * self.fir_res) & FIXP_MASK;
-            let fir_start_1 = (fir_offset_1 * self.fir_n) as usize;
-            let fir_end_1 = fir_start_1 + self.fir_n as usize;
-            let sample_start_1 = (self.index as i32 - self.fir_n + RING_SIZE as i32) as usize;
-            let sample_end_1 = sample_start_1 + self.fir_n as usize;
+            let fir_offset_1 = (self.offset * self.fir.res) >> FIXP_SHIFT;
+            let fir_offset_rmd = (self.offset * self.fir.res) & FIXP_MASK;
+            let fir_start_1 = (fir_offset_1 * self.fir.n) as usize;
+            let fir_end_1 = fir_start_1 + self.fir.n as usize;
+            let sample_start_1 = (self.index as i32 - self.fir.n + RING_SIZE as i32) as usize;
+            let sample_end_1 = sample_start_1 + self.fir.n as usize;
 
             // Convolution with filter impulse response.
             let v1 = self.compute_convolution_fir(
                 &self.buffer[sample_start_1..sample_end_1],
-                &self.fir[fir_start_1..fir_end_1],
+                &self.fir.data[fir_start_1..fir_end_1],
             );
 
             // Use next FIR table, wrap around to first FIR table using
             // previous sample.
             let mut fir_offset_2 = fir_offset_1 + 1;
             let mut sample_start_2 = sample_start_1;
-            if fir_offset_2 == self.fir_res {
+            if fir_offset_2 == self.fir.res {
                 fir_offset_2 = 0;
                 sample_start_2 -= 1;
             }
-            let fir_start_2 = (fir_offset_2 * self.fir_n) as usize;
-            let fir_end_2 = fir_start_2 + self.fir_n as usize;
-            let sample_end_2 = sample_start_2 + self.fir_n as usize;
+            let fir_start_2 = (fir_offset_2 * self.fir.n) as usize;
+            let fir_end_2 = fir_start_2 + self.fir.n as usize;
+            let sample_end_2 = sample_start_2 + self.fir.n as usize;
 
             let v2 = self.compute_convolution_fir(
                 &self.buffer[sample_start_2..sample_end_2],
-                &self.fir[fir_start_2..fir_end_2],
+                &self.fir.data[fir_start_2..fir_end_2],
             );
 
             // Linear interpolation.
@@ -305,6 +324,7 @@ impl Sampler {
     }
 
     /// SID clocking with audio sampling - cycle based with audio resampling.
+    #[cfg(feature = "alloc")]
     #[inline]
     fn clock_resample_fast(
         &mut self,
@@ -332,16 +352,16 @@ impl Sampler {
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
-            let fir_offset = (self.offset * self.fir_res) >> FIXP_SHIFT;
-            let fir_start = (fir_offset * self.fir_n) as usize;
-            let fir_end = fir_start + self.fir_n as usize;
-            let sample_start = (self.index as i32 - self.fir_n + RING_SIZE as i32) as usize;
-            let sample_end = sample_start + self.fir_n as usize;
+            let fir_offset = (self.offset * self.fir.res) >> FIXP_SHIFT;
+            let fir_start = (fir_offset * self.fir.n) as usize;
+            let fir_end = fir_start + self.fir.n as usize;
+            let sample_start = (self.index as i32 - self.fir.n + RING_SIZE as i32) as usize;
+            let sample_end = sample_start + self.fir.n as usize;
 
             // Convolution with filter impulse response.
             let mut v = self.compute_convolution_fir(
                 &self.buffer[sample_start..sample_end],
-                &self.fir[fir_start..fir_end],
+                &self.fir.data[fir_start..fir_end],
             );
             v >>= FIR_SHIFT;
 
@@ -515,6 +535,7 @@ impl Sampler {
         self.offset = next_sample_offset & FIXP_MASK;
     }
 
+    #[cfg(feature = "alloc")]
     fn init_fir(
         &mut self,
         clock_freq: f64,
@@ -557,8 +578,8 @@ impl Sampler {
 
         // The filter length is equal to the filter order + 1.
         // The filter length must be an odd number (sinc is symmetric about x = 0).
-        self.fir_n = (n_cap as f64 * cycles_per_sample) as i32 + 1;
-        self.fir_n |= 1;
+        self.fir.n = (n_cap as f64 * cycles_per_sample) as i32 + 1;
+        self.fir.n |= 1;
 
         // We clamp the filter table resolution to 2^n, making the fixpoint
         // sample_offset a whole multiple of the filter table resolution.
@@ -568,18 +589,20 @@ impl Sampler {
             FIR_RES_FAST
         };
         let n = ((res as f64 / cycles_per_sample).ln() / (2.0f64).ln()).ceil() as i32;
-        self.fir_res = 1 << n;
+        self.fir.res = 1 << n;
 
-        self.fir.clear();
-        self.fir.resize((self.fir_n * self.fir_res) as usize, 0);
+        self.fir.data.clear();
+        self.fir
+            .data
+            .resize((self.fir.n * self.fir.res) as usize, 0);
 
         // Calculate fir_RES FIR tables for linear interpolation.
-        for i in 0..self.fir_res {
-            let fir_offset = i * self.fir_n + self.fir_n / 2;
-            let j_offset = i as f64 / self.fir_res as f64;
+        for i in 0..self.fir.res {
+            let fir_offset = i * self.fir.n + self.fir.n / 2;
+            let j_offset = i as f64 / self.fir.res as f64;
             // Calculate FIR table. This is the sinc function, weighted by the
             // Kaiser window.
-            let fir_n_div2 = self.fir_n / 2;
+            let fir_n_div2 = self.fir.n / 2;
             for j in -fir_n_div2..=fir_n_div2 {
                 let jx = j as f64 - j_offset;
                 let wt = wc * jx / cycles_per_sample;
@@ -593,7 +616,7 @@ impl Sampler {
                 let val = (1i32 << FIR_SHIFT) as f64 * filter_scale * samples_per_cycle * wc / pi
                     * sincwt
                     * kaiser;
-                self.fir[(fir_offset + j) as usize] = (val + 0.5) as i16;
+                self.fir.data[(fir_offset + j) as usize] = (val + 0.5) as i16;
             }
         }
     }

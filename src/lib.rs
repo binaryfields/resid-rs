@@ -5,9 +5,9 @@
 
 #![no_std]
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 extern crate alloc;
-#[cfg(feature = "std")]
+#[cfg(all(feature = "alloc", feature = "std"))]
 extern crate std as alloc;
 
 mod data;
