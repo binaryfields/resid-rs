@@ -49,6 +49,7 @@ is to generate audio samples and push them to audio output buffer.
 - 0.8 - documentation and api refinements/internal cleanup
 - 0.9 - migration to Rust 2018
 - 1.0 - no_std support
+- 1.1 - more idiomatic implementation, removes interior mutability and improves support for async rust
 
 ## Credits
 

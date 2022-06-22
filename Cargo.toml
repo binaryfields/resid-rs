@@ -1,11 +1,11 @@
 [package]
 name = "resid-rs"
-version = "1.0.4"
+version = "1.1.0"
 edition = "2018"
 authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 description = "Port of reSID, a MOS6581 SID emulator engine, to Rust"
 license = "GPL-3.0+"
-repository = "https://github.com/digitalstreamio/resid-rs"
+repository = "https://github.com/binaryfields/resid-rs"
 readme = "README.md"
 keywords = ["c64", "commodore", "emulator", "resid", "sid"]
 categories = ["emulators"]
