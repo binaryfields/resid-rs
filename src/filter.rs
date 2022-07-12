@@ -7,6 +7,7 @@
 
 use core::f64;
 
+use super::data::{SPLINE6581_F0, SPLINE8580_F0};
 use super::spline;
 use super::ChipModel;
 
@@ -144,12 +145,16 @@ pub struct Filter {
     w0_ceil_1: i32,
     w0_ceil_dt: i32,
     // Cutoff Freq Tables
-    f0: [i32; 2048],
+    f0: &'static [i32; 2048],
     f0_points: &'static [(i32, i32)],
 }
 
 impl Filter {
     pub fn new(chip_model: ChipModel) -> Self {
+        let f0 = match chip_model {
+            ChipModel::Mos6581 => &SPLINE6581_F0,
+            ChipModel::Mos8580 => &SPLINE8580_F0,
+        };
         let f0_points = match chip_model {
             ChipModel::Mos6581 => &FO_POINTS_6581[0..],
             ChipModel::Mos8580 => &FO_POINTS_8580[0..],
@@ -171,10 +176,9 @@ impl Filter {
             w0: 0,
             w0_ceil_1: 0,
             w0_ceil_dt: 0,
-            f0: [0; 2048],
+            f0,
             f0_points,
         };
-        filter.set_f0();
         filter.set_q();
         filter.set_w0();
         filter
@@ -514,11 +518,6 @@ impl Filter {
         self.vnf = 0;
         self.set_w0();
         self.set_q();
-    }
-
-    fn set_f0(&mut self) {
-        let mut plotter = spline::PointPlotter::new(&mut self.f0[..2048]);
-        spline::interpolate(self.f0_points, &mut plotter, 1.0);
     }
 
     fn set_q(&mut self) {
