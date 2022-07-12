@@ -7,6 +7,7 @@
 
 use super::external_filter::ExternalFilter;
 use super::filter::Filter;
+use super::sid::reg;
 use super::voice::Voice;
 use super::wave::Syncable;
 use super::ChipModel;
@@ -156,5 +157,46 @@ impl Synth {
             self.voices[i].reset();
         }
         self.ext_in = 0;
+    }
+
+    pub fn read(&self, reg: u8, bus_value: u8) -> u8 {
+        match reg {
+            reg::POTX => 0xff,
+            reg::POTY => 0xff,
+            reg::OSC3 => self.syncable_voice(2).wave().read_osc(),
+            reg::ENV3 => self.voices[2].envelope.read_env(),
+            _ => bus_value,
+        }
+    }
+
+    pub fn write(&mut self, reg: u8, value: u8) {
+        match reg {
+            reg::FREQLO1 => self.voices[0].wave.set_frequency_lo(value),
+            reg::FREQHI1 => self.voices[0].wave.set_frequency_hi(value),
+            reg::PWLO1 => self.voices[0].wave.set_pulse_width_lo(value),
+            reg::PWHI1 => self.voices[0].wave.set_pulse_width_hi(value),
+            reg::CR1 => self.voices[0].set_control(value),
+            reg::AD1 => self.voices[0].envelope.set_attack_decay(value),
+            reg::SR1 => self.voices[0].envelope.set_sustain_release(value),
+            reg::FREQLO2 => self.voices[1].wave.set_frequency_lo(value),
+            reg::FREQHI2 => self.voices[1].wave.set_frequency_hi(value),
+            reg::PWLO2 => self.voices[1].wave.set_pulse_width_lo(value),
+            reg::PWHI2 => self.voices[1].wave.set_pulse_width_hi(value),
+            reg::CR2 => self.voices[1].set_control(value),
+            reg::AD2 => self.voices[1].envelope.set_attack_decay(value),
+            reg::SR2 => self.voices[1].envelope.set_sustain_release(value),
+            reg::FREQLO3 => self.voices[2].wave.set_frequency_lo(value),
+            reg::FREQHI3 => self.voices[2].wave.set_frequency_hi(value),
+            reg::PWLO3 => self.voices[2].wave.set_pulse_width_lo(value),
+            reg::PWHI3 => self.voices[2].wave.set_pulse_width_hi(value),
+            reg::CR3 => self.voices[2].set_control(value),
+            reg::AD3 => self.voices[2].envelope.set_attack_decay(value),
+            reg::SR3 => self.voices[2].envelope.set_sustain_release(value),
+            reg::FCLO => self.filter.set_fc_lo(value),
+            reg::FCHI => self.filter.set_fc_hi(value),
+            reg::RESFILT => self.filter.set_res_filt(value),
+            reg::MODVOL => self.filter.set_mode_vol(value),
+            _ => {}
+        }
     }
 }
