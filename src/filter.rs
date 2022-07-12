@@ -64,7 +64,7 @@ pub struct Filter {
     w0_ceil_1: i32,
     w0_ceil_dt: i32,
     // Cutoff Freq Tables
-    f0: &'static [i32; 2048],
+    f0: &'static [i16; 2048],
 }
 
 impl Filter {
