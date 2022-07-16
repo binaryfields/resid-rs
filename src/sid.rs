@@ -163,108 +163,13 @@ impl Sid {
     // -- Device I/O
 
     pub fn read(&self, reg: u8) -> u8 {
-        match reg {
-            reg::POTX => 0xff,
-            reg::POTY => 0xff,
-            reg::OSC3 => self.sampler.synth.syncable_voice(2).wave().read_osc(),
-            reg::ENV3 => self.sampler.synth.voices[2].envelope.read_env(),
-            _ => self.bus_value,
-        }
+        self.sampler.synth.read(reg, self.bus_value)
     }
 
     pub fn write(&mut self, reg: u8, value: u8) {
         self.bus_value = value;
         self.bus_value_ttl = 0x2000;
-        match reg {
-            reg::FREQLO1 => {
-                self.sampler.synth.voices[0].wave.set_frequency_lo(value);
-            }
-            reg::FREQHI1 => {
-                self.sampler.synth.voices[0].wave.set_frequency_hi(value);
-            }
-            reg::PWLO1 => {
-                self.sampler.synth.voices[0].wave.set_pulse_width_lo(value);
-            }
-            reg::PWHI1 => {
-                self.sampler.synth.voices[0].wave.set_pulse_width_hi(value);
-            }
-            reg::CR1 => {
-                self.sampler.synth.voices[0].set_control(value);
-            }
-            reg::AD1 => {
-                self.sampler.synth.voices[0]
-                    .envelope
-                    .set_attack_decay(value);
-            }
-            reg::SR1 => {
-                self.sampler.synth.voices[0]
-                    .envelope
-                    .set_sustain_release(value);
-            }
-            reg::FREQLO2 => {
-                self.sampler.synth.voices[1].wave.set_frequency_lo(value);
-            }
-            reg::FREQHI2 => {
-                self.sampler.synth.voices[1].wave.set_frequency_hi(value);
-            }
-            reg::PWLO2 => {
-                self.sampler.synth.voices[1].wave.set_pulse_width_lo(value);
-            }
-            reg::PWHI2 => {
-                self.sampler.synth.voices[1].wave.set_pulse_width_hi(value);
-            }
-            reg::CR2 => {
-                self.sampler.synth.voices[1].set_control(value);
-            }
-            reg::AD2 => {
-                self.sampler.synth.voices[1]
-                    .envelope
-                    .set_attack_decay(value);
-            }
-            reg::SR2 => {
-                self.sampler.synth.voices[1]
-                    .envelope
-                    .set_sustain_release(value);
-            }
-            reg::FREQLO3 => {
-                self.sampler.synth.voices[2].wave.set_frequency_lo(value);
-            }
-            reg::FREQHI3 => {
-                self.sampler.synth.voices[2].wave.set_frequency_hi(value);
-            }
-            reg::PWLO3 => {
-                self.sampler.synth.voices[2].wave.set_pulse_width_lo(value);
-            }
-            reg::PWHI3 => {
-                self.sampler.synth.voices[2].wave.set_pulse_width_hi(value);
-            }
-            reg::CR3 => {
-                self.sampler.synth.voices[2].set_control(value);
-            }
-            reg::AD3 => {
-                self.sampler.synth.voices[2]
-                    .envelope
-                    .set_attack_decay(value);
-            }
-            reg::SR3 => {
-                self.sampler.synth.voices[2]
-                    .envelope
-                    .set_sustain_release(value);
-            }
-            reg::FCLO => {
-                self.sampler.synth.filter.set_fc_lo(value);
-            }
-            reg::FCHI => {
-                self.sampler.synth.filter.set_fc_hi(value);
-            }
-            reg::RESFILT => {
-                self.sampler.synth.filter.set_res_filt(value);
-            }
-            reg::MODVOL => {
-                self.sampler.synth.filter.set_mode_vol(value);
-            }
-            _ => {}
-        }
+        self.sampler.synth.write(reg, value);
     }
 
     // -- State
