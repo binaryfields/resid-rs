@@ -7,91 +7,11 @@
 
 use core::f64;
 
+use super::data::{SPLINE6581_F0, SPLINE8580_F0};
 use super::spline;
 use super::ChipModel;
 
 const MIXER_DC: i32 = (-0xfff * 0xff / 18) >> 7;
-
-// Maximum cutoff frequency is specified as
-// FCmax = 2.6e-5/C = 2.6e-5/2200e-12 = 11818.
-//
-// Measurements indicate a cutoff frequency range of approximately
-// 220Hz - 18kHz on a MOS6581 fitted with 470pF capacitors. The function
-// mapping FC to cutoff frequency has the shape of the tanh function, with
-// a discontinuity at FCHI = 0x80.
-// In contrast, the MOS8580 almost perfectly corresponds with the
-// specification of a linear mapping from 30Hz to 12kHz.
-//
-// The mappings have been measured by feeding the SID with an external
-// signal since the chip itself is incapable of generating waveforms of
-// higher fundamental frequency than 4kHz. It is best to use the bandpass
-// output at full resonance to pick out the cutoff frequency at any given
-// FC setting.
-//
-// The mapping function is specified with spline interpolation points and
-// the function values are retrieved via table lookup.
-//
-// NB! Cutoff frequency characteristics may vary, we have modeled two
-// particular Commodore 64s.
-static FO_POINTS_6581: [(i32, i32); 31] = [
-    //  FC      f         FCHI FCLO
-    // ----------------------------
-    (0, 220),      // 0x00      - repeated end point
-    (0, 220),      // 0x00
-    (128, 230),    // 0x10
-    (256, 250),    // 0x20
-    (384, 300),    // 0x30
-    (512, 420),    // 0x40
-    (640, 780),    // 0x50
-    (768, 1600),   // 0x60
-    (832, 2300),   // 0x68
-    (896, 3200),   // 0x70
-    (960, 4300),   // 0x78
-    (992, 5000),   // 0x7c
-    (1008, 5400),  // 0x7e
-    (1016, 5700),  // 0x7f
-    (1023, 6000),  // 0x7f 0x07
-    (1023, 6000),  // 0x7f 0x07 - discontinuity
-    (1024, 4600),  // 0x80      -
-    (1024, 4600),  // 0x80
-    (1032, 4800),  // 0x81
-    (1056, 5300),  // 0x84
-    (1088, 6000),  // 0x88
-    (1120, 6600),  // 0x8c
-    (1152, 7200),  // 0x90
-    (1280, 9500),  // 0xa0
-    (1408, 12000), // 0xb0
-    (1536, 14500), // 0xc0
-    (1664, 16000), // 0xd0
-    (1792, 17100), // 0xe0
-    (1920, 17700), // 0xf0
-    (2047, 18000), // 0xff 0x07
-    (2047, 18000), // 0xff 0x07 - repeated end point
-];
-
-static FO_POINTS_8580: [(i32, i32); 19] = [
-    //  FC      f         FCHI FCLO
-    // ----------------------------
-    (0, 0),        // 0x00      - repeated end point
-    (0, 0),        // 0x00
-    (128, 800),    // 0x10
-    (256, 1600),   // 0x20
-    (384, 2500),   // 0x30
-    (512, 3300),   // 0x40
-    (640, 4100),   // 0x50
-    (768, 4800),   // 0x60
-    (896, 5600),   // 0x70
-    (1024, 6500),  // 0x80
-    (1152, 7500),  // 0x90
-    (1280, 8400),  // 0xa0
-    (1408, 9200),  // 0xb0
-    (1536, 9800),  // 0xc0
-    (1664, 10500), // 0xd0
-    (1792, 11000), // 0xe0
-    (1920, 11700), // 0xf0
-    (2047, 12500), // 0xff 0x07
-    (2047, 12500), // 0xff 0x07 - repeated end point
-];
 
 /// The SID filter is modeled with a two-integrator-loop biquadratic filter,
 /// which has been confirmed by Bob Yannes to be the actual circuit used in
@@ -144,15 +64,14 @@ pub struct Filter {
     w0_ceil_1: i32,
     w0_ceil_dt: i32,
     // Cutoff Freq Tables
-    f0: [i32; 2048],
-    f0_points: &'static [(i32, i32)],
+    f0: &'static [i16; 2048],
 }
 
 impl Filter {
     pub fn new(chip_model: ChipModel) -> Self {
-        let f0_points = match chip_model {
-            ChipModel::Mos6581 => &FO_POINTS_6581[0..],
-            ChipModel::Mos8580 => &FO_POINTS_8580[0..],
+        let f0 = match chip_model {
+            ChipModel::Mos6581 => &SPLINE6581_F0,
+            ChipModel::Mos8580 => &SPLINE8580_F0,
         };
         let mut filter = Filter {
             enabled: true,
@@ -171,10 +90,8 @@ impl Filter {
             w0: 0,
             w0_ceil_1: 0,
             w0_ceil_dt: 0,
-            f0: [0; 2048],
-            f0_points,
+            f0,
         };
-        filter.set_f0();
         filter.set_q();
         filter.set_w0();
         filter
@@ -514,11 +431,6 @@ impl Filter {
         self.vnf = 0;
         self.set_w0();
         self.set_q();
-    }
-
-    fn set_f0(&mut self) {
-        let mut plotter = spline::PointPlotter::new(&mut self.f0[..2048]);
-        spline::interpolate(self.f0_points, &mut plotter, 1.0);
     }
 
     fn set_q(&mut self) {
