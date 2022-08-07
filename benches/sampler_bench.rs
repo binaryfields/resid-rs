@@ -1,12 +1,9 @@
-#[macro_use]
-extern crate criterion;
-
 use criterion::Criterion;
 use resid::sampler::Sampler;
 use resid::synth::Synth;
 use resid::ChipModel;
 
-fn bench_compute_convolution_fir(c: &mut Criterion) {
+pub fn bench_compute_convolution_fir(c: &mut Criterion) {
     c.bench_function("convolution_fir", |b| {
         let sampler = Sampler::new(Synth::new(ChipModel::Mos6581));
         let samples = [2i16; 1024];
@@ -32,6 +29,3 @@ fn bench_compute_convolution_fir(c: &mut Criterion) {
         b.iter(|| sampler.compute_convolution_fir_fallback(&samples[..], &fir[..]))
     });
 }
-
-criterion_group!(benches, bench_compute_convolution_fir);
-criterion_main!(benches);

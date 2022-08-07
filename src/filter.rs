@@ -8,7 +8,6 @@
 use core::f64;
 
 use super::data::{SPLINE6581_F0, SPLINE8580_F0};
-use super::spline;
 use super::ChipModel;
 
 const MIXER_DC: i32 = (-0xfff * 0xff / 18) >> 7;

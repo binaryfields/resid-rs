@@ -26,5 +26,5 @@ libm = { version = "0.2.0", optional = true }
 criterion = "0.2"
 
 [[bench]]
-name = "sampler_bench"
+name = "main"
 harness = false
