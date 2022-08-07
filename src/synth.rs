@@ -24,6 +24,17 @@ pub struct Synth {
     pub ext_in: i32,
 }
 
+// slice::rotate_left is inefficient for small arrays:
+// https://github.com/rust-lang/rust/issues/89714
+fn rotate3<T>([a, b, c]: [T; 3], i: usize) -> [T; 3] {
+    match i {
+        0 => [a, b, c],
+        1 => [b, c, a],
+        2 => [c, a, b],
+        _ => panic!("index out of bounds"),
+    }
+}
+
 impl Synth {
     pub fn new(chip_model: ChipModel) -> Self {
         Synth {
@@ -36,9 +47,7 @@ impl Synth {
 
     pub fn syncable_voice(&self, i: usize) -> Syncable<&'_ Voice> {
         let [a, b, c] = &self.voices;
-        let mut voices_ref = [a, b, c];
-        voices_ref.rotate_left(i);
-        let [main, sync_dest, sync_source] = voices_ref;
+        let [main, sync_dest, sync_source] = rotate3([a, b, c], i);
         Syncable {
             main,
             sync_dest,
@@ -48,9 +57,7 @@ impl Synth {
 
     pub fn syncable_voice_mut(&mut self, i: usize) -> Syncable<&'_ mut Voice> {
         let [a, b, c] = &mut self.voices;
-        let mut voices_mut = [a, b, c];
-        voices_mut.rotate_left(i);
-        let [main, sync_dest, sync_source] = voices_mut;
+        let [main, sync_dest, sync_source] = rotate3([a, b, c], i);
         Syncable {
             main,
             sync_dest,
