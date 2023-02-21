@@ -202,7 +202,7 @@ impl EnvelopeGenerator {
             self.rate_counter = 0;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
-            self.exponential_counter += 1; // TODO check w/ ref impl
+            self.exponential_counter += 1;
             if self.state == State::Attack
                 || self.exponential_counter == self.exponential_counter_period
             {
@@ -234,7 +234,13 @@ impl EnvelopeGenerator {
                         // counting down in the release state.
                         // This has been verified by sampling ENV3.
                         // NB! The operation below requires two's complement integer.
-                        self.envelope_counter -= 1;
+                        if self.envelope_counter != 0 {
+                            self.envelope_counter -= 1;
+                        } else {
+                            self.exponential_counter_period = 1;
+                            self.hold_zero = true;    
+                        }
+
                     }
                 }
                 // Check for change of exponential counter period.
