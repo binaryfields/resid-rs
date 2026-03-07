@@ -16,6 +16,14 @@ const OUTPUT_RANGE: u32 = 1 << 16;
 const OUTPUT_HALF: i32 = (OUTPUT_RANGE >> 1) as i32;
 const SAMPLES_PER_OUTPUT: u32 = ((4095 * 255) >> 7) * 3 * 15 * 2 / OUTPUT_RANGE;
 
+// Sync wiring: voice[i].sync_source = voice[SYNC_SOURCE[i]]
+// Matches the C++ constructor:
+//   voice[0].set_sync_source(&voice[2])
+//   voice[1].set_sync_source(&voice[0])
+//   voice[2].set_sync_source(&voice[1])
+const SYNC_SOURCE: [usize; 3] = [2, 0, 1];
+const SYNC_DEST: [usize; 3] = [1, 2, 0];
+
 #[derive(Clone, Copy)]
 pub struct Synth {
     pub ext_filter: ExternalFilter,
@@ -78,13 +86,13 @@ impl Synth {
         for i in 0..3 {
             self.syncable_voice_mut(i).wave().synchronize();
         }
+        // Compute voice outputs once — avoids redundant rotate3 + output()
+        // calls when passing them to filter.clock().
+        let v0 = self.voice_output(0);
+        let v1 = self.voice_output(1);
+        let v2 = self.voice_output(2);
         // Clock filter.
-        self.filter.clock(
-            self.syncable_voice(0).output(),
-            self.syncable_voice(1).output(),
-            self.syncable_voice(2).output(),
-            self.ext_in,
-        );
+        self.filter.clock(v0, v1, v2, self.ext_in);
         // Clock external filter.
         self.ext_filter.clock(self.filter.output());
     }
@@ -101,14 +109,17 @@ impl Synth {
             // correctly.
             let mut delta_min = delta_osc;
             for i in 0..3 {
-                let wave = self.syncable_voice(i).wave();
+                let src = SYNC_SOURCE[i];
+                let dest = SYNC_DEST[i];
                 // It is only necessary to clock on the MSB of an oscillator that is
                 // a sync source and has freq != 0.
-                if !(wave.sync_dest.get_sync() && wave.main.get_frequency() != 0) {
+                if !(self.voices[dest].wave.get_sync()
+                    && self.voices[src].wave.get_frequency() != 0)
+                {
                     continue;
                 }
-                let freq = wave.main.get_frequency() as u32;
-                let acc = wave.main.get_acc();
+                let freq = self.voices[src].wave.get_frequency() as u32;
+                let acc = self.voices[src].wave.get_acc();
                 // Clock on MSB off if MSB is on, clock on MSB on if MSB is off.
                 let delta_acc = if acc & 0x0080_0000 != 0 {
                     0x0100_0000 - acc
@@ -133,16 +144,32 @@ impl Synth {
             }
             delta_osc -= delta_min;
         }
+        // Compute voice outputs once — avoids redundant rotate3 + output()
+        // calls when passing them to filter.clock_delta().
+        let v0 = self.voice_output(0);
+        let v1 = self.voice_output(1);
+        let v2 = self.voice_output(2);
         // Clock filter.
-        self.filter.clock_delta(
-            delta,
-            self.syncable_voice(0).output(),
-            self.syncable_voice(1).output(),
-            self.syncable_voice(2).output(),
-            self.ext_in,
-        );
+        self.filter.clock_delta(delta, v0, v1, v2, self.ext_in);
         // Clock external filter.
         self.ext_filter.clock_delta(delta, self.filter.output());
+    }
+
+    /// Compute the audio output of voice `i`, respecting voice3off.
+    /// Equivalent to syncable_voice(i).output() but uses precomputed
+    /// SYNC_SOURCE/SYNC_DEST indices instead of rotate3().
+    #[inline]
+    fn voice_output(&self, i: usize) -> i32 {
+        let src = SYNC_SOURCE[i];
+        let dest = SYNC_DEST[i];
+        // Delegate to Syncable::output() via the existing API to preserve
+        // all voice3off / ring-mod logic defined there.
+        Syncable {
+            main: &self.voices[i],
+            sync_dest: &self.voices[dest],
+            sync_source: &self.voices[src],
+        }
+        .output()
     }
 
     pub fn output(&self) -> i16 {
