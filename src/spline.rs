@@ -206,13 +206,15 @@ fn interpolate_forward_difference(
 /// Note also that points of non-differentiability and discontinuity can be
 /// introduced by repeating points.
 pub fn interpolate<P: Into<Point> + Copy>(points: &[P], plotter: &mut PointPlotter, res: f64) {
-    // The C++ reference iterates while p2 != pn (the last point), meaning the
-    // loop runs for points.len() - 3 segments (indices 0 ..= points.len()-4
-    // for p0, stopping when p2 reaches the last element, i.e. i <= len-3).
+    // The C++ reference iterates `for (; p2 != pn; ++p0, ++p1, ++p2, ++p3)`.
+    // pn points past the last element, so the loop stops when p2 == pn, i.e.
+    // when i+2 == len-1  =>  i == len-3.  The last valid i is therefore len-4
+    // and p3 lands on the last element (index len-1).  Using len-3 would
+    // advance p3 one past the end → out-of-bounds.
     if points.len() < 4 {
         return;
     }
-    let last_index = points.len() - 3;
+    let last_index = points.len() - 4;
     let mut i = 0;
     while i <= last_index {
         let p0 = points[i].into();
