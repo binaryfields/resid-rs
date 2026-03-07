@@ -115,16 +115,19 @@ impl From<(i32, i32)> for Point {
 }
 
 pub struct PointPlotter<'a> {
-    output: &'a mut [i32],
+    output: &'a mut [i16],
 }
 
 impl<'a> PointPlotter<'a> {
-    pub fn new(output: &'a mut [i32]) -> Self {
+    pub fn new(output: &'a mut [i16]) -> Self {
         PointPlotter { output }
     }
 
     pub fn plot(&mut self, x: f64, y: f64) {
-        let value = if y > 0.0 { y as i32 } else { 0 };
+        // Clamp negative values to zero, matching the C++ reference which sets
+        // y = 0 for y < 0 before casting. Also clamp to i16::MAX to avoid
+        // overflow on assignment into the i16 table.
+        let value = y.clamp(0.0, i16::MAX as f64) as i16;
         self.output[x as usize] = value;
     }
 }
@@ -203,7 +206,13 @@ fn interpolate_forward_difference(
 /// Note also that points of non-differentiability and discontinuity can be
 /// introduced by repeating points.
 pub fn interpolate<P: Into<Point> + Copy>(points: &[P], plotter: &mut PointPlotter, res: f64) {
-    let last_index = points.len() - 4;
+    // The C++ reference iterates while p2 != pn (the last point), meaning the
+    // loop runs for points.len() - 3 segments (indices 0 ..= points.len()-4
+    // for p0, stopping when p2 reaches the last element, i.e. i <= len-3).
+    if points.len() < 4 {
+        return;
+    }
+    let last_index = points.len() - 3;
     let mut i = 0;
     while i <= last_index {
         let p0 = points[i].into();
