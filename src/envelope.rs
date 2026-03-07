@@ -115,7 +115,7 @@ pub struct EnvelopeGenerator {
 
 impl Default for EnvelopeGenerator {
     fn default() -> Self {
-        let mut envelope = EnvelopeGenerator {
+        EnvelopeGenerator {
             attack: 0,
             decay: 0,
             sustain: 0,
@@ -124,13 +124,11 @@ impl Default for EnvelopeGenerator {
             state: State::Release,
             envelope_counter: 0,
             exponential_counter: 0,
-            exponential_counter_period: 0,
-            hold_zero: false,
+            exponential_counter_period: 1,
+            hold_zero: true,
             rate_counter: 0,
-            rate_counter_period: 0,
-        };
-        envelope.reset();
-        envelope
+            rate_counter_period: RATE_COUNTER_PERIOD[0],
+        }
     }
 }
 
@@ -202,7 +200,7 @@ impl EnvelopeGenerator {
             self.rate_counter = 0;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
-            self.exponential_counter += 1;
+            self.exponential_counter = self.exponential_counter.wrapping_add(1);
             if self.state == State::Attack
                 || self.exponential_counter == self.exponential_counter_period
             {
@@ -217,7 +215,7 @@ impl EnvelopeGenerator {
                         // release, then to attack. The envelope counter is then frozen at
                         // zero; to unlock this situation the state must be changed to release,
                         // then to attack. This has been verified by sampling ENV3.
-                        self.envelope_counter += 1;
+                        self.envelope_counter = self.envelope_counter.wrapping_add(1);
                         if self.envelope_counter == 0xff {
                             self.state = State::DecaySustain;
                             self.rate_counter_period = RATE_COUNTER_PERIOD[self.decay as usize];
@@ -225,7 +223,7 @@ impl EnvelopeGenerator {
                     }
                     State::DecaySustain => {
                         if self.envelope_counter != SUSTAIN_LEVEL[self.sustain as usize] {
-                            self.envelope_counter -= 1;
+                            self.envelope_counter = self.envelope_counter.wrapping_sub(1);
                         }
                     }
                     State::Release => {
@@ -234,13 +232,7 @@ impl EnvelopeGenerator {
                         // counting down in the release state.
                         // This has been verified by sampling ENV3.
                         // NB! The operation below requires two's complement integer.
-                        if self.envelope_counter != 0 {
-                            self.envelope_counter -= 1;
-                        } else {
-                            self.exponential_counter_period = 1;
-                            self.hold_zero = true;    
-                        }
-
+                        self.envelope_counter = self.envelope_counter.wrapping_sub(1);
                     }
                 }
                 // Check for change of exponential counter period.
@@ -283,7 +275,7 @@ impl EnvelopeGenerator {
             delta -= rate_step as u32;
             // The first envelope step in the attack state also resets the exponential
             // counter. This has been verified by sampling ENV3.
-            self.exponential_counter += 1; // TODO check w/ ref impl
+            self.exponential_counter = self.exponential_counter.wrapping_add(1);
             if self.state == State::Attack
                 || self.exponential_counter == self.exponential_counter_period
             {
@@ -299,7 +291,7 @@ impl EnvelopeGenerator {
                         // release, then to attack. The envelope counter is then frozen at
                         // zero; to unlock this situation the state must be changed to release,
                         // then to attack. This has been verified by sampling ENV3.
-                        self.envelope_counter += 1;
+                        self.envelope_counter = self.envelope_counter.wrapping_add(1);
                         if self.envelope_counter == 0xff {
                             self.state = State::DecaySustain;
                             self.rate_counter_period = RATE_COUNTER_PERIOD[self.decay as usize];
@@ -307,7 +299,7 @@ impl EnvelopeGenerator {
                     }
                     State::DecaySustain => {
                         if self.envelope_counter != SUSTAIN_LEVEL[self.sustain as usize] {
-                            self.envelope_counter -= 1;
+                            self.envelope_counter = self.envelope_counter.wrapping_sub(1);
                         }
                     }
                     State::Release => {
@@ -316,7 +308,7 @@ impl EnvelopeGenerator {
                         // counting down in the release state.
                         // This has been verified by sampling ENV3.
                         // NB! The operation below requires two's complement integer.
-                        self.envelope_counter -= 1;
+                        self.envelope_counter = self.envelope_counter.wrapping_sub(1);
                     }
                 }
                 // Check for change of exponential counter period.
