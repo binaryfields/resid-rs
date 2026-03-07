@@ -280,22 +280,13 @@ impl Sampler {
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
-        let half = 1i32 << 15;
         loop {
             let next_sample_offset = self.get_next_sample_offset2();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
             if delta_sample > delta || index >= buffer.len() {
                 break;
             }
-
-            for _i in 0..delta_sample {
-                self.synth.clock();
-                let output = self.synth.output();
-                self.buffer[self.index] = output;
-                self.buffer[self.index + RING_SIZE] = output;
-                self.index += 1;
-                self.index &= 0x3fff;
-            }
+            self.fill_ring_buffer(delta_sample);
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
@@ -335,30 +326,10 @@ impl Sampler {
             let mut v = v1 + ((fir_offset_rmd * (v2 - v1)) >> FIXP_SHIFT);
             v >>= FIR_SHIFT;
 
-            // Saturated arithmetics to guard against 16 bit sample overflow.
-            if v >= half {
-                v = half - 1;
-            } else if v < -half {
-                v = -half;
-            }
-
-            buffer[index * interleave] = v as i16;
+            buffer[index * interleave] = Self::saturate(v);
             index += 1;
         }
-        if delta > 0 && index < buffer.len() {
-            for _i in 0..delta {
-                self.synth.clock();
-                let output = self.synth.output();
-                self.buffer[self.index] = output;
-                self.buffer[self.index + RING_SIZE] = output;
-                self.index += 1;
-                self.index &= 0x3fff;
-            }
-            self.offset -= (delta as i32) << FIXP_SHIFT;
-            (index, 0)
-        } else {
-            (index, delta)
-        }
+        self.drain_ring_buffer(delta, index, buffer.len())
     }
 
     /// SID clocking with audio sampling - cycle based with audio resampling.
@@ -371,22 +342,13 @@ impl Sampler {
         interleave: usize,
     ) -> (usize, u32) {
         let mut index = 0;
-        let half = 1i32 << 15;
         loop {
             let next_sample_offset = self.get_next_sample_offset2();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
             if delta_sample > delta || index >= buffer.len() {
                 break;
             }
-
-            for _i in 0..delta_sample {
-                self.synth.clock();
-                let output = self.synth.output();
-                self.buffer[self.index] = output;
-                self.buffer[self.index + RING_SIZE] = output;
-                self.index += 1;
-                self.index &= 0x3fff;
-            }
+            self.fill_ring_buffer(delta_sample);
             delta -= delta_sample;
             self.update_sample_offset2(next_sample_offset);
 
@@ -403,29 +365,53 @@ impl Sampler {
             );
             v >>= FIR_SHIFT;
 
-            // Saturated arithmetics to guard against 16 bit sample overflow.
-            if v >= half {
-                v = half - 1;
-            } else if v < -half {
-                v = -half;
-            }
-
-            buffer[index * interleave] = v as i16;
+            buffer[index * interleave] = Self::saturate(v);
             index += 1;
         }
-        if delta > 0 && index < buffer.len() {
-            for _i in 0..delta {
-                self.synth.clock();
-                let output = self.synth.output();
-                self.buffer[self.index] = output;
-                self.buffer[self.index + RING_SIZE] = output;
-                self.index += 1;
-                self.index &= 0x3fff;
-            }
+        self.drain_ring_buffer(delta, index, buffer.len())
+    }
+
+    /// Clock the synthesizer for `n` cycles and push each output sample
+    /// into the mirrored ring buffer used by the resampling convolution.
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn fill_ring_buffer(&mut self, n: u32) {
+        for _i in 0..n {
+            self.synth.clock();
+            let output = self.synth.output();
+            self.buffer[self.index] = output;
+            self.buffer[self.index + RING_SIZE] = output;
+            self.index += 1;
+            self.index &= 0x3fff;
+        }
+    }
+
+    /// Consume any remaining delta cycles after the main resampling loop,
+    /// updating the ring buffer and sample offset. Shared tail path for
+    /// clock_resample_interpolate and clock_resample_fast.
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn drain_ring_buffer(&mut self, delta: u32, index: usize, buf_len: usize) -> (usize, u32) {
+        if delta > 0 && index < buf_len {
+            self.fill_ring_buffer(delta);
             self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
             (index, delta)
+        }
+    }
+
+    /// Clamp a convolution result to the i16 range, guarding against
+    /// 16-bit sample overflow. Shared by both resampling clock paths.
+    #[inline]
+    fn saturate(v: i32) -> i16 {
+        let half = 1i32 << 15;
+        if v >= half {
+            (half - 1) as i16
+        } else if v < -half {
+            (-half) as i16
+        } else {
+            v as i16
         }
     }
 
