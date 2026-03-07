@@ -38,7 +38,7 @@ static FO_POINTS_6581: [(i32, i32); 31] = [
     (2047, 18000), // 0xff 0x07 - repeated end point
 ];
 
-fn set_f0(f0: &mut [i32; 2048]) {
+fn set_f0(f0: &mut [i16; 2048]) {
     let points = FO_POINTS_6581
         .iter()
         .map(|&pt| spline::Point {
@@ -52,7 +52,7 @@ fn set_f0(f0: &mut [i32; 2048]) {
 
 #[test]
 fn interpolate() {
-    let mut f0 = [0i32; 2048];
+    let mut f0 = [0i16; 2048];
     set_f0(&mut f0);
     for i in 0..2048usize {
         assert_eq!(f0[i], data::spline_output::RESID_OUTPUT[i]);

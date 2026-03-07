@@ -108,6 +108,7 @@ fn clock() {
     assert_eq!(cycles, 32915);
 }
 
+#[test]
 fn clock_delta() {
     let mut envelope = EnvelopeGenerator::default();
     envelope.set_attack_decay(0x02 << 4 | 0x00);
@@ -117,16 +118,24 @@ fn clock_delta() {
     envelope2.set_attack_decay(0x02 << 4 | 0x00);
     envelope2.set_sustain_release(0x02 << 4 | 0x01);
     envelope2.set_control(0x01);
-    for i in 0..33000 {
-        if i == 19000 {
+    // Clock both envelopes in lockstep: envelope one cycle at a time,
+    // envelope2 in chunks of 100. Compare after each complete chunk so
+    // both have processed the same total number of cycles at the assertion.
+    for i in 0..330 {
+        if i == 190 {
             envelope.set_control(0x00);
             envelope2.set_control(0x00);
         }
-        envelope.clock();
-        if i % 100 == 0 {
-            envelope2.clock_delta(100);
-            assert_eq!(envelope2.output(), envelope.output());
+        for _ in 0..100 {
+            envelope.clock();
         }
+        envelope2.clock_delta(100);
+        assert_eq!(
+            envelope2.output(),
+            envelope.output(),
+            "mismatch after {} cycles",
+            (i + 1) * 100
+        );
     }
 }
 
