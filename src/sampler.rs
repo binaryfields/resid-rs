@@ -539,17 +539,18 @@ impl Sampler {
 
     #[inline]
     pub fn compute_convolution_fir_fallback(&self, sample: &[i16], fir: &[i16]) -> i32 {
-        if sample.len() < fir.len() {
-            sample
-                .iter()
-                .zip(fir.iter())
-                .fold(0, |sum, (&s, &f)| sum + (s as i32 * f as i32))
-        } else {
-            fir.iter()
-                .zip(sample.iter())
-                .fold(0, |sum, (&f, &s)| sum + (f as i32 * s as i32))
-        }
+        // Truncate both slices to the same length before zipping. The compiler
+        // can then prove they are equal in size, eliminate per-element bounds
+        // checks, and auto-vectorise the loop — without resorting to unsafe.
+        // In practice sample and fir are always the same length (constructed
+        // that way in clock_resample_*), so min() never changes the result.
+        let len = sample.len().min(fir.len());
+        sample[..len]
+            .iter()
+            .zip(fir[..len].iter())
+            .fold(0i32, |sum, (&s, &f)| sum + s as i32 * f as i32)
     }
+
 
     #[inline]
     fn get_next_sample_offset(&self) -> i32 {
