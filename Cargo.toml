@@ -1,6 +1,6 @@
 [package]
 name = "resid-rs"
-version = "1.1.1"
+version = "1.1.2"
 edition = "2018"
 authors = ["Sebastian Jastrzebski <sebby2k@gmail.com>"]
 description = "Port of reSID, a MOS6581 SID emulator engine, to Rust"
@@ -20,10 +20,10 @@ alloc = []
 
 [dependencies]
 bit_field = "0.10"
-libm = { version = "0.2.0", optional = true }
+libm = { version = "0.2", optional = true }
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.8"
 
 [[bench]]
 name = "main"
