@@ -48,6 +48,9 @@ struct Fir {
     data: Vec<i16>,
     n: i32,
     res: i32,
+    // Cached parameters — init_fir is skipped when these match the new request.
+    clock_freq: u32,
+    sample_freq: u32,
 }
 
 #[derive(Clone)]
@@ -80,6 +83,8 @@ impl Sampler {
                 data: Vec::new(),
                 n: 0,
                 res: 0,
+                clock_freq: 0,
+                sample_freq: 0,
             },
             sampling_method: SamplingMethod::Fast,
             #[cfg(all(feature = "std", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -102,7 +107,14 @@ impl Sampler {
         if self.sampling_method == SamplingMethod::Resample
             || self.sampling_method == SamplingMethod::ResampleFast
         {
-            self.init_fir(clock_freq as f64, sample_freq as f64, -1.0, 0.97);
+            if self.fir.clock_freq != clock_freq
+                || self.fir.sample_freq != sample_freq
+                || self.fir.n == 0
+            {
+                self.init_fir(clock_freq as f64, sample_freq as f64, -1.0, 0.97);
+                self.fir.clock_freq = clock_freq;
+                self.fir.sample_freq = sample_freq;
+            }
         }
         // Clear state
         for j in 0..RING_SIZE * 2 {
