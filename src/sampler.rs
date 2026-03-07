@@ -198,7 +198,7 @@ impl Sampler {
             // clock one more cycle, matching the C++ reference:
             //   for (i = 0; i < delta_t_sample - 1; i++) clock();
             //   if (i < delta_t_sample) { sample_prev = output(); clock(); }
-            for _i in 0..(delta_sample - 1) {
+            for _i in 0..delta_sample.saturating_sub(1) {
                 self.synth.clock();
             }
             if delta_sample > 0 {
@@ -221,13 +221,15 @@ impl Sampler {
         //   for (i = 0; i < delta_t - 1; i++) clock();
         //   if (i < delta_t) { sample_prev = output(); clock(); }
         if delta > 0 && index < buffer.len() {
-            for _i in 0..(delta - 1) {
+            // delta >= 1 is guaranteed by the outer `if delta > 0` guard,
+            // so saturating_sub(1) == delta - 1 here. The guard is kept for
+            // symmetry with the delta_sample path above.
+            for _i in 0..delta.saturating_sub(1) {
                 self.synth.clock();
             }
-            if delta > 0 {
-                self.prev_sample = self.synth.output();
-                self.synth.clock();
-            }
+            // Unconditional: delta > 0 is already established above.
+            self.prev_sample = self.synth.output();
+            self.synth.clock();
             self.offset -= (delta as i32) << FIXP_SHIFT;
             (index, 0)
         } else {
