@@ -13,7 +13,7 @@ use super::ChipModel;
 /// level should ideally have been 0x800. In the measured chip, the
 /// waveform output "zero" level was found to be 0x380 (i.e. $d41b
 /// = 0x38) at 5.94V.
-const WAVE_ZERO: i32 = 0x0380;
+const WAVE_ZERO_6581: i32 = 0x0380;
 
 /// The envelope multiplying D/A converter introduces another DC
 /// offset. This is isolated by the following measurements:
@@ -33,7 +33,7 @@ const WAVE_ZERO: i32 = 0x0380;
 ///     y < 0: (5.70V - 5.44V) - 0.50V = -0.24V
 /// The scaling of the voice amplitude is not symmetric about y = 0;
 /// this follows from the DC level in the waveform output.
-const VOICE_DC: i32 = 0x800 * 0xff;
+const VOICE_DC_6581: i32 = 0x800 * 0xff;
 
 #[derive(Clone, Copy)]
 pub struct Voice {
@@ -49,8 +49,8 @@ impl Voice {
     pub fn new(chip_model: ChipModel) -> Self {
         match chip_model {
             ChipModel::Mos6581 => Voice {
-                wave_zero: WAVE_ZERO,
-                voice_dc: VOICE_DC,
+                wave_zero: WAVE_ZERO_6581,
+                voice_dc: VOICE_DC_6581,
                 envelope: EnvelopeGenerator::default(),
                 wave: WaveformGenerator::new(chip_model),
             },
