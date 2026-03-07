@@ -99,11 +99,14 @@ impl ExternalFilter {
                 // Vo  = Vlp - Vhp;
                 // Vlp = Vlp + w0lp*(Vi - Vlp)*delta_t;
                 // Vhp = Vhp + w0hp*(Vlp - Vhp)*delta_t;
-                let dvlp = ((self.w0_lp >> 8) * (vi - self.vlp)) >> 12;
-                let dvhp = (self.w0_hp * (self.vlp - self.vhp)) >> 20;
+                // Recompute dv at each sub-step: vlp and vhp change each
+                // iteration so dvlp/dvhp must reflect the current state.
+                // Matches the C++ reference which recalculates inside the loop.
+                let dvlp = ((self.w0_lp >> 8) * delta_flt as i32 * (vi - self.vlp)) >> 12;
+                let dvhp = (self.w0_hp * delta_flt as i32 * (self.vlp - self.vhp)) >> 20;
                 self.vo = self.vlp - self.vhp;
-                self.vlp += delta_flt as i32 * dvlp;
-                self.vhp += delta_flt as i32 * dvhp;
+                self.vlp += dvlp;
+                self.vhp += dvhp;
                 delta -= delta_flt;
             }
         } else {
