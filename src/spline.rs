@@ -96,8 +96,9 @@
 //! ki = kj = dy/dx;
 //!
 
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::float_cmp))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
+
+#![cfg_attr(clippy, allow(clippy::float_cmp))]
+#![cfg_attr(clippy, allow(clippy::too_many_arguments))]
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Point {
