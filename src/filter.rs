@@ -10,7 +10,12 @@ use core::f64;
 use super::data::{SPLINE6581_F0, SPLINE8580_F0};
 use super::ChipModel;
 
-const MIXER_DC: i32 = (-0xfff * 0xff / 18) >> 7;
+/// The mixer has a small input DC offset on the MOS6581.
+/// The "zero" output level of the mixer measured on the SID audio output pin
+/// is 5.50V at zero volume, and 5.44V at full volume, yielding a DC offset of
+/// approximately -1/18 of the dynamic range of one voice. See voice.cc for
+/// measurement of the dynamic range.
+const MIXER_DC_6581: i32 = (-0xfff * 0xff / 18) >> 7;
 
 /// The SID filter is modeled with a two-integrator-loop biquadratic filter,
 /// which has been confirmed by Bob Yannes to be the actual circuit used in
@@ -68,9 +73,9 @@ pub struct Filter {
 
 impl Filter {
     pub fn new(chip_model: ChipModel) -> Self {
-        let f0 = match chip_model {
-            ChipModel::Mos6581 => &SPLINE6581_F0,
-            ChipModel::Mos8580 => &SPLINE8580_F0,
+        let (f0, mixer_dc) = match chip_model {
+            ChipModel::Mos6581 => (&SPLINE6581_F0, MIXER_DC_6581),
+            ChipModel::Mos8580 => (&SPLINE8580_F0, 0), // No DC offset on MOS8580.
         };
         let mut filter = Filter {
             enabled: true,
@@ -84,7 +89,7 @@ impl Filter {
             vbp: 0,
             vlp: 0,
             vnf: 0,
-            mixer_dc: MIXER_DC,
+            mixer_dc,
             q_1024_div: 0,
             w0: 0,
             w0_ceil_1: 0,
