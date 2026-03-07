@@ -539,7 +539,6 @@ impl Sampler {
             .fold(0i32, |sum, (&s, &f)| sum + s as i32 * f as i32)
     }
 
-
     /// Compute the fixpoint offset for the next sample.
     /// `nearest = true`  adds a half-cycle bias so that delta is rounded to the
     ///                    nearest sample (used by Fast and Interpolate modes).
@@ -643,7 +642,6 @@ impl Sampler {
             }
         }
     }
-
 } // impl Sampler
 
 /// 0th order modified Bessel function of the first kind, used for the
