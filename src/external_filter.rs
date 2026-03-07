@@ -47,7 +47,7 @@ impl ExternalFilter {
             ChipModel::Mos6581 => MIXER_DC_6581,
             ChipModel::Mos8580 => 0,
         };
-        let mut filter = ExternalFilter {
+        ExternalFilter {
             enabled: true,
             mixer_dc,
             w0_lp: W0_LP,
@@ -55,9 +55,7 @@ impl ExternalFilter {
             vlp: 0,
             vhp: 0,
             vo: 0,
-        };
-        filter.reset();
-        filter
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
@@ -101,11 +99,11 @@ impl ExternalFilter {
                 // Vo  = Vlp - Vhp;
                 // Vlp = Vlp + w0lp*(Vi - Vlp)*delta_t;
                 // Vhp = Vhp + w0hp*(Vlp - Vhp)*delta_t;
-                let dvlp = (((self.w0_lp * delta_flt as i32) >> 8) * (vi - self.vlp)) >> 12;
-                let dvhp = (self.w0_hp * delta_flt as i32 * (self.vlp - self.vhp)) >> 20;
+                let dvlp = ((self.w0_lp >> 8) * (vi - self.vlp)) >> 12;
+                let dvhp = (self.w0_hp * (self.vlp - self.vhp)) >> 20;
                 self.vo = self.vlp - self.vhp;
-                self.vlp += dvlp;
-                self.vhp += dvhp;
+                self.vlp += delta_flt as i32 * dvlp;
+                self.vhp += delta_flt as i32 * dvhp;
                 delta -= delta_flt;
             }
         } else {
