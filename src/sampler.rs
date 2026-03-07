@@ -144,12 +144,18 @@ impl Sampler {
         loop {
             let next_sample_offset = self.get_next_sample_offset();
             let delta_sample = (next_sample_offset >> FIXP_SHIFT) as u32;
-            if delta_sample > delta || index >= buffer.len() {
+            if delta_sample > delta {
                 break;
+            }
+            // Buffer full: return remaining delta so the caller can resume.
+            // Matches the C++ reference which does `if (s >= n) { return s; }`
+            // without consuming the remaining delta_t.
+            if index >= buffer.len() {
+                return (index, delta);
             }
             self.synth.clock_delta(delta_sample);
             delta -= delta_sample;
-            buffer[(index * interleave) as usize] = self.synth.output();
+            buffer[index * interleave] = self.synth.output();
             index += 1;
             self.update_sample_offset(next_sample_offset);
         }
@@ -176,20 +182,38 @@ impl Sampler {
             if delta_sample > delta || index >= buffer.len() {
                 break;
             }
+            // Clock delta_sample - 1 cycles, then capture prev_sample and
+            // clock one more cycle, matching the C++ reference:
+            //   for (i = 0; i < delta_t_sample - 1; i++) clock();
+            //   if (i < delta_t_sample) { sample_prev = output(); clock(); }
             for _i in 0..(delta_sample - 1) {
+                self.synth.clock();
+            }
+            if delta_sample > 0 {
                 self.prev_sample = self.synth.output();
                 self.synth.clock();
             }
             delta -= delta_sample;
+            self.update_sample_offset(next_sample_offset);
+
             let sample_now = self.synth.output();
             buffer[index * interleave] = self.prev_sample
-                + ((self.offset * (sample_now - self.prev_sample) as i32) >> FIXP_SHIFT) as i16;
+                + (((next_sample_offset & FIXP_MASK) - (1 << (FIXP_SHIFT - 1)))
+                    * (sample_now - self.prev_sample) as i32
+                    >> FIXP_SHIFT) as i16;
             index += 1;
             self.prev_sample = sample_now;
-            self.update_sample_offset(next_sample_offset);
         }
+        // Tail: clock remaining cycles, capturing prev_sample before the last
+        // clock, matching the C++ tail path:
+        //   for (i = 0; i < delta_t - 1; i++) clock();
+        //   if (i < delta_t) { sample_prev = output(); clock(); }
         if delta > 0 && index < buffer.len() {
             for _i in 0..(delta - 1) {
+                self.synth.clock();
+            }
+            if delta > 0 {
+                self.prev_sample = self.synth.output();
                 self.synth.clock();
             }
             self.offset -= (delta as i32) << FIXP_SHIFT;
