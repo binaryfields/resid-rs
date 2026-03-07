@@ -65,7 +65,7 @@ impl WaveformGenerator {
                 &data::WAVE8580_ST,
             ),
         };
-        let mut waveform = WaveformGenerator {
+        WaveformGenerator {
             frequency: 0,
             pulse_width: 0,
             waveform: 0,
@@ -73,15 +73,13 @@ impl WaveformGenerator {
             sync: false,
             test: false,
             acc: 0,
-            shift: 0,
+            shift: 0x007f_fff8,
             msb_rising: false,
             wave_ps,
             wave_pst,
             wave_pt,
             wave_st,
-        };
-        waveform.reset();
-        waveform
+        }
     }
 
     pub fn get_acc(&self) -> u32 {
@@ -230,7 +228,7 @@ impl WaveformGenerator {
                 }
                 // Shift the noise/random register.
                 let bit0 = ((self.shift >> 22) ^ (self.shift >> 17)) & 0x01;
-                self.shift = (self.shift << 1) & SHIFT_MASK | bit0;
+                self.shift = ((self.shift << 1) & SHIFT_MASK) | bit0;
                 delta_acc -= shift_period;
             }
         }
@@ -249,14 +247,10 @@ impl WaveformGenerator {
             0x6 => self.output_ps(),
             0x7 => self.output_pst(),
             0x8 => self.output_n(),
-            0x9 => 0,
-            0xa => 0,
-            0xb => 0,
-            0xc => 0,
-            0xd => 0,
-            0xe => 0,
-            0xf => 0,
-            _ => panic!("invalid waveform {}", self.waveform),
+            // Waveform combinations 0x9-0xf are not implemented; output 0
+            // to match the C++ reference behaviour.
+            0x9..=0xf => 0,
+            _ => unreachable!(),
         }
     }
 
